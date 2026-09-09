@@ -1,10 +1,18 @@
 const pool = require('../config/db');
 const { success, error } = require('../utils/response');
 
+const getLocalDateString = () => {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 const getDashboardStats = async (req, res) => {
   try {
-    const today = new Date().toISOString().split('T')[0];
-
+    const today = getLocalDateString();
+    
     // Total pasien keseluruhan
     const totalPatients = await pool.query('SELECT COUNT(*) FROM patients');
 

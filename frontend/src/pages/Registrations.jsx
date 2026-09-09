@@ -3,12 +3,13 @@ import api from '../services/api';
 import Modal from '../components/Modal';
 import { useAuth } from '../context/AuthContext';
 import SearchableSelect from '../components/SearchableSelect';
+import { Lock } from 'lucide-react';
 
 const statusColors = {
-  menunggu: 'bg-amber-100 text-amber-700',
-  check_in: 'bg-blue-100 text-blue-700',
-  pemeriksaan: 'bg-purple-100 text-purple-700',
-  selesai: 'bg-green-100 text-green-700',
+  menunggu: 'bg-amber-50 text-amber-700',
+  check_in: 'bg-blue-50 text-blue-700',
+  pemeriksaan: 'bg-purple-50 text-purple-700',
+  selesai: 'bg-green-50 text-green-700',
 };
 
 const statusLabels = {
@@ -41,6 +42,18 @@ const Registrations = () => {
   const [formErrors, setFormErrors] = useState({});
 
   const canManage = user?.role === 'admin' || user?.role === 'petugas';
+
+  const isPastDate = (dateString) => {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const visitDate = new Date(dateString);
+  visitDate.setHours(0, 0, 0, 0);
+  return visitDate < today;
+};
+
+const isLocked = (registration) => {
+  return registration.status === 'selesai' || isPastDate(registration.tanggal_kunjungan);
+};
 
   const fetchRegistrations = async () => {
     setLoading(true);
@@ -173,24 +186,40 @@ const Registrations = () => {
                     <td className="py-3 pr-4">{r.tanggal_kunjungan?.split('T')[0]}</td>
                     <td className="py-3 pr-4">{r.jenis_pembayaran}</td>
                     <td className="py-3 pr-4">
-                      <span className={`text-xs px-2 py-1 rounded-full font-medium ${statusColors[r.status]}`}>
-                        {statusLabels[r.status]}
-                      </span>
-                    </td>
+  <span className={`inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full font-medium ${statusColors[r.status]}`}>
+    <span className="w-1.5 h-1.5 rounded-full bg-current"></span>
+    {statusLabels[r.status]}
+  </span>
+</td>
                     {canManage && (
-                      <td className="py-3 pr-4">
-                        <select
-                          value={r.status}
-                          onChange={(e) => handleStatusChange(r.id, e.target.value)}
-                          className="text-xs border border-slate-300 rounded-md px-2 py-1"
-                        >
-                          <option value="menunggu">Menunggu</option>
-                          <option value="check_in">Check In</option>
-                          <option value="pemeriksaan">Pemeriksaan</option>
-                          <option value="selesai">Selesai</option>
-                        </select>
-                      </td>
-                    )}
+  <td className="py-3 pr-4">
+    <div className="flex justify-end">
+      {isLocked(r) ? (
+        <span className="inline-flex items-center gap-1.5 text-xs text-slate-400 px-3 py-1.5 bg-slate-50 rounded-lg border border-slate-200">
+          <Lock size={12} />
+          {r.status === 'selesai' ? 'Selesai' : 'Sudah lewat'}
+        </span>
+      ) : (
+        <select
+          value={r.status}
+          onChange={(e) => handleStatusChange(r.id, e.target.value)}
+          className={`text-xs font-medium rounded-lg px-3 py-1.5 border cursor-pointer focus:outline-none focus:ring-2 focus:ring-offset-1 ${
+            r.status === 'menunggu'
+              ? 'bg-amber-50 text-amber-700 border-amber-200 focus:ring-amber-400'
+              : r.status === 'check_in'
+              ? 'bg-blue-50 text-blue-700 border-blue-200 focus:ring-blue-400'
+              : 'bg-purple-50 text-purple-700 border-purple-200 focus:ring-purple-400'
+          }`}
+        >
+          <option value="menunggu">Menunggu</option>
+          <option value="check_in">Check In</option>
+          <option value="pemeriksaan">Pemeriksaan</option>
+          <option value="selesai">Selesai</option>
+        </select>
+      )}
+    </div>
+  </td>
+)}
                   </tr>
                 ))
               )}

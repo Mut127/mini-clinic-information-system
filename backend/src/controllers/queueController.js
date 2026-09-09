@@ -1,11 +1,18 @@
 const pool = require('../config/db');
 const { success, error } = require('../utils/response');
 
-// GET /queues 
+const getLocalDateString = () => {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 const getQueues = async (req, res) => {
   try {
     const { tanggal, status } = req.query;
-    const filterDate = tanggal || new Date().toISOString().split('T')[0]; // buat jadi default hari ini
+    const filterDate = tanggal || getLocalDateString();
     let query = `
       SELECT q.*, r.tanggal_kunjungan, r.status AS status_kunjungan,
              p.nama AS nama_pasien, p.no_rm,

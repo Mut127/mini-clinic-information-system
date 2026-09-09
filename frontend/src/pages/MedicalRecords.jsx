@@ -67,6 +67,7 @@ const MedicalRecords = () => {
       registration_id: regId,
       patient_id: reg?.patient_id || '',
       doctor_id: reg?.doctor_id || '',
+      keluhan: reg?.keluhan_awal || '',
     });
     setFormErrors({});
     setSuccessMsg('');
