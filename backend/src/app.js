@@ -8,6 +8,7 @@ const queueRoutes = require('./routes/queueRoutes');
 const medicalRecordRoutes = require('./routes/medicalRecordRoutes');
 const dashboardRoutes = require('./routes/dashboardRoutes');
 const prescriptionRoutes = require('./routes/prescriptionRoutes');
+const masterRoutes = require('./routes/masterRoutes');
 
 const app = express();
 
@@ -25,6 +26,7 @@ app.use('/api/queues', queueRoutes);
 app.use('/api/medical-records', medicalRecordRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/prescriptions', prescriptionRoutes);
+app.use('/api/master', masterRoutes);
 
 app.use(errorHandler);
 

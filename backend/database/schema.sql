@@ -9,7 +9,7 @@ CREATE TABLE users (
 
 CREATE TABLE polies (
     id SERIAL PRIMARY KEY,
-    nama_poli VARCHAR(100) NOT NULL
+    nama_poli VARCHAR(100) UNIQUE NOT NULL
 );
 
 CREATE TABLE doctors (
