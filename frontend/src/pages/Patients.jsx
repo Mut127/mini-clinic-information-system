@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import api from '../services/api';
 import Modal from '../components/Modal';
 import { useAuth } from '../context/AuthContext';
+import { Eye, Pencil, Trash2 } from 'lucide-react';
 
 const emptyForm = {
   nik: '',
@@ -143,7 +144,7 @@ const Patients = () => {
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="text-left text-slate-500 border-b border-slate-200">
+               <tr className="text-left text-slate-400 text-xs uppercase tracking-wide border-b border-slate-200">
                 <th className="py-2 pr-4">No. RM</th>
                 <th className="py-2 pr-4">Nama</th>
                 <th className="py-2 pr-4">NIK</th>
@@ -159,24 +160,59 @@ const Patients = () => {
                 <tr><td colSpan={6} className="py-6 text-center text-slate-400">Belum ada data pasien</td></tr>
               ) : (
                 patients.map((p) => (
-                  <tr key={p.id} className="border-b border-slate-100 hover:bg-slate-50">
-                    <td className="py-3 pr-4 font-medium text-teal-700">{p.no_rm}</td>
-                    <td className="py-3 pr-4">{p.nama}</td>
-                    <td className="py-3 pr-4">{p.nik}</td>
-                    <td className="py-3 pr-4">{p.jenis_kelamin}</td>
-                    <td className="py-3 pr-4">{p.no_telepon || '-'}</td>
-                    <td className="py-3 pr-4">
-                      <div className="flex justify-end gap-2">
-                        <button onClick={() => openDetailModal(p)} className="text-blue-600 hover:underline text-xs">Detail</button>
-                        {canManage && (
-                          <button onClick={() => openEditModal(p)} className="text-amber-600 hover:underline text-xs">Ubah</button>
-                        )}
-                        {canDelete && (
-                          <button onClick={() => handleDelete(p.id)} className="text-red-600 hover:underline text-xs">Hapus</button>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
+                  <tr key={p.id} className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
+    <td className="py-3 pr-4">
+      <span className="text-xs font-semibold text-teal-700 bg-teal-50 px-2.5 py-1 rounded-full">
+        {p.no_rm}
+      </span>
+    </td>
+    <td className="py-3 pr-4">
+      <div className="flex items-center gap-3">
+        <div className="w-8 h-8 rounded-full bg-slate-200 text-slate-600 flex items-center justify-center text-xs font-bold shrink-0">
+          {p.nama?.charAt(0).toUpperCase()}
+        </div>
+        <span className="font-medium text-slate-800">{p.nama}</span>
+      </div>
+    </td>
+    <td className="py-3 pr-4 text-slate-500">{p.nik}</td>
+    <td className="py-3 pr-4">
+      <span className={`text-xs px-2 py-0.5 rounded-md font-medium ${
+        p.jenis_kelamin === 'L' ? 'bg-blue-50 text-blue-600' : 'bg-pink-50 text-pink-600'
+      }`}>
+        {p.jenis_kelamin === 'L' ? 'Laki-laki' : 'Perempuan'}
+      </span>
+    </td>
+    <td className="py-3 pr-4 text-slate-500">{p.no_telepon || '-'}</td>
+    <td className="py-3 pr-4">
+      <div className="flex justify-end gap-1.5">
+        <button
+          onClick={() => openDetailModal(p)}
+          title="Detail"
+          className="w-8 h-8 flex items-center justify-center rounded-lg text-blue-600 bg-blue-50 hover:bg-blue-100 transition"
+        >
+          <Eye size={15} />
+        </button>
+        {canManage && (
+          <button
+            onClick={() => openEditModal(p)}
+            title="Ubah"
+            className="w-8 h-8 flex items-center justify-center rounded-lg text-amber-600 bg-amber-50 hover:bg-amber-100 transition"
+          >
+            <Pencil size={15} />
+          </button>
+        )}
+        {canDelete && (
+          <button
+            onClick={() => handleDelete(p.id)}
+            title="Hapus"
+            className="w-8 h-8 flex items-center justify-center rounded-lg text-red-600 bg-red-50 hover:bg-red-100 transition"
+          >
+            <Trash2 size={15} />
+          </button>
+        )}
+      </div>
+    </td>
+  </tr>
                 ))
               )}
             </tbody>
@@ -286,19 +322,51 @@ const Patients = () => {
       </Modal>
 
       {/* Modal Detail */}
-      <Modal isOpen={detailModalOpen} onClose={() => setDetailModalOpen(false)} title="Detail Pasien">
-        {selectedPatient && (
-          <div className="space-y-2 text-sm">
-            <div className="flex justify-between"><span className="text-slate-500">No. RM</span><span className="font-medium">{selectedPatient.no_rm}</span></div>
-            <div className="flex justify-between"><span className="text-slate-500">NIK</span><span className="font-medium">{selectedPatient.nik}</span></div>
-            <div className="flex justify-between"><span className="text-slate-500">Nama</span><span className="font-medium">{selectedPatient.nama}</span></div>
-            <div className="flex justify-between"><span className="text-slate-500">Jenis Kelamin</span><span className="font-medium">{selectedPatient.jenis_kelamin === 'L' ? 'Laki-laki' : 'Perempuan'}</span></div>
-            <div className="flex justify-between"><span className="text-slate-500">Tanggal Lahir</span><span className="font-medium">{selectedPatient.tanggal_lahir?.split('T')[0]}</span></div>
-            <div className="flex justify-between"><span className="text-slate-500">No. Telepon</span><span className="font-medium">{selectedPatient.no_telepon || '-'}</span></div>
-            <div className="flex justify-between"><span className="text-slate-500">Alamat</span><span className="font-medium text-right max-w-[60%]">{selectedPatient.alamat || '-'}</span></div>
-          </div>
-        )}
-      </Modal>
+      {/* Modal Detail */}
+<Modal isOpen={detailModalOpen} onClose={() => setDetailModalOpen(false)} title="Detail Pasien">
+  {selectedPatient && (
+    <div>
+      {/* Header profil */}
+      <div className="flex items-center gap-4 pb-5 mb-5 border-b border-slate-100">
+        <div className="w-16 h-16 rounded-2xl bg-teal-500 flex items-center justify-center text-white text-2xl font-bold shrink-0">
+          {selectedPatient.nama?.charAt(0).toUpperCase()}
+        </div>
+        <div className="min-w-0">
+          <p className="font-bold text-slate-800 text-lg truncate">{selectedPatient.nama}</p>
+          <span className="inline-block mt-1 text-xs font-semibold text-teal-700 bg-teal-50 px-2.5 py-1 rounded-full">
+            {selectedPatient.no_rm}
+          </span>
+        </div>
+      </div>
+
+      {/* Grid info */}
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <p className="text-xs text-slate-400 mb-1">NIK</p>
+          <p className="text-sm font-medium text-slate-800">{selectedPatient.nik}</p>
+        </div>
+        <div>
+          <p className="text-xs text-slate-400 mb-1">Jenis Kelamin</p>
+          <p className="text-sm font-medium text-slate-800">
+            {selectedPatient.jenis_kelamin === 'L' ? 'Laki-laki' : 'Perempuan'}
+          </p>
+        </div>
+        <div>
+          <p className="text-xs text-slate-400 mb-1">Tanggal Lahir</p>
+          <p className="text-sm font-medium text-slate-800">{selectedPatient.tanggal_lahir?.split('T')[0]}</p>
+        </div>
+        <div>
+          <p className="text-xs text-slate-400 mb-1">No. Telepon</p>
+          <p className="text-sm font-medium text-slate-800">{selectedPatient.no_telepon || '-'}</p>
+        </div>
+        <div className="col-span-2">
+          <p className="text-xs text-slate-400 mb-1">Alamat</p>
+          <p className="text-sm font-medium text-slate-800">{selectedPatient.alamat || '-'}</p>
+        </div>
+      </div>
+    </div>
+  )}
+</Modal>
     </div>
   );
 };

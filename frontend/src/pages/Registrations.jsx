@@ -126,7 +126,7 @@ const Registrations = () => {
         )}
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-5">
+      <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5">
         <div className="flex gap-2 mb-4">
           {['', 'menunggu', 'check_in', 'pemeriksaan', 'selesai'].map((s) => (
             <button
@@ -163,7 +163,7 @@ const Registrations = () => {
                 <tr><td colSpan={7} className="py-6 text-center text-slate-400">Belum ada data pendaftaran</td></tr>
               ) : (
                 registrations.map((r) => (
-                  <tr key={r.id} className="border-b border-slate-100 hover:bg-slate-50">
+                  <tr key={r.id} className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
                     <td className="py-3 pr-4">
                       <div className="font-medium">{r.nama_pasien}</div>
                       <div className="text-xs text-slate-400">{r.no_rm}</div>

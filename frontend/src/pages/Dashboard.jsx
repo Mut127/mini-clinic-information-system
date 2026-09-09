@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'react';
 import api from '../services/api';
+import { Users, UserPlus, Ticket, Clock, CheckCircle2 } from 'lucide-react';
 
-const StatCard = ({ label, value, color }) => (
-  <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-5">
-    <p className="text-sm text-slate-500">{label}</p>
-    <p className={`text-3xl font-bold mt-2 ${color}`}>{value}</p>
-  </div>
-);
+const statConfig = [
+  { key: 'total_pasien', label: 'Total Pasien', icon: Users, color: 'text-slate-700', bg: 'bg-slate-100' },
+  { key: 'total_pasien_hari_ini', label: 'Pasien Hari Ini', icon: UserPlus, color: 'text-teal-600', bg: 'bg-teal-50' },
+  { key: 'total_antrean_hari_ini', label: 'Antrean Hari Ini', icon: Ticket, color: 'text-blue-600', bg: 'bg-blue-50' },
+  { key: 'total_pasien_menunggu', label: 'Pasien Menunggu', icon: Clock, color: 'text-amber-600', bg: 'bg-amber-50' },
+  { key: 'total_pasien_selesai', label: 'Selesai Dilayani', icon: CheckCircle2, color: 'text-green-600', bg: 'bg-green-50' },
+];
 
 const Dashboard = () => {
   const [stats, setStats] = useState(null);
@@ -17,14 +19,19 @@ const Dashboard = () => {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-slate-800 mb-6">Dashboard</h1>
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-        <StatCard label="Total Pasien" value={stats?.total_pasien ?? '-'} color="text-slate-800" />
-        <StatCard label="Pasien Hari Ini" value={stats?.total_pasien_hari_ini ?? '-'} color="text-teal-600" />
-        <StatCard label="Antrean Hari Ini" value={stats?.total_antrean_hari_ini ?? '-'} color="text-blue-600" />
-        <StatCard label="Pasien Menunggu" value={stats?.total_pasien_menunggu ?? '-'} color="text-amber-600" />
-        <StatCard label="Selesai Dilayani" value={stats?.total_pasien_selesai ?? '-'} color="text-green-600" />
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-5">
+        {statConfig.map(({ key, label, icon: Icon, color, bg }) => (
+          <div
+            key={key}
+            className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5 hover:shadow-md transition-shadow"
+          >
+            <div className={`w-11 h-11 rounded-xl ${bg} flex items-center justify-center mb-4`}>
+              <Icon size={22} className={color} strokeWidth={2} />
+            </div>
+            <p className="text-sm text-slate-500 mb-1">{label}</p>
+            <p className={`text-3xl font-bold ${color}`}>{stats ? stats[key] : '-'}</p>
+          </div>
+        ))}
       </div>
     </div>
   );

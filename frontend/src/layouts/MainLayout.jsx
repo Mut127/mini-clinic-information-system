@@ -1,69 +1,114 @@
-import { NavLink, useNavigate, Outlet } from 'react-router-dom';
+import { NavLink, useNavigate, useLocation, Outlet } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import {
+  LayoutDashboard,
+  Users,
+  ClipboardList,
+  Ticket,
+  Stethoscope,
+  LogOut,
+  Plus,
+} from 'lucide-react';
 
 const menuItems = [
-  { path: '/dashboard', label: 'Dashboard', icon: '📊' },
-  { path: '/patients', label: 'Data Pasien', icon: '🧑‍🤝‍🧑' },
-  { path: '/registrations', label: 'Pendaftaran', icon: '📝' },
-  { path: '/queues', label: 'Antrean', icon: '🎫' },
-  { path: '/medical-records', label: 'Pemeriksaan', icon: '🩺' },
+  { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { path: '/patients', label: 'Data Pasien', icon: Users },
+  { path: '/registrations', label: 'Pendaftaran', icon: ClipboardList },
+  { path: '/queues', label: 'Antrean', icon: Ticket },
+  { path: '/medical-records', label: 'Pemeriksaan', icon: Stethoscope },
 ];
+
+const roleLabels = {
+  admin: 'Administrator',
+  dokter: 'Dokter',
+  petugas: 'Petugas Pendaftaran',
+};
 
 const MainLayout = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const handleLogout = async () => {
     await logout();
     navigate('/login');
   };
 
+  const currentPage = menuItems.find((item) => item.path === location.pathname);
+  const initials = user?.nama?.split(' ').map((n) => n[0]).slice(0, 2).join('').toUpperCase();
+
   return (
     <div className="flex min-h-screen bg-slate-50">
       {/* Sidebar */}
-      <aside className="w-64 bg-slate-900 text-white flex flex-col">
-        <div className="p-5 border-b border-slate-700">
-          <h2 className="font-bold text-lg">Mini Clinic</h2>
-          <p className="text-xs text-slate-400">Information System</p>
+      <aside className="w-64 bg-gradient-to-b from-slate-900 to-slate-800 text-white flex flex-col fixed h-screen">
+        <div className="p-6 border-b border-white/10 flex items-center gap-3">
+          <div className="w-10 h-10 bg-teal-500 rounded-xl flex items-center justify-center font-bold text-lg shrink-0">
+            +
+          </div>
+          <div>
+            <h2 className="font-bold text-base leading-tight">Mini Clinic</h2>
+            <p className="text-xs text-slate-400">Information System</p>
+          </div>
         </div>
 
-        <nav className="flex-1 p-3 space-y-1">
-          {menuItems.map((item) => (
-            <NavLink
-              key={item.path}
-              to={item.path}
-              className={({ isActive }) =>
-                `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition ${
-                  isActive
-                    ? 'bg-teal-600 text-white'
-                    : 'text-slate-300 hover:bg-slate-800'
-                }`
-              }
-            >
-              <span>{item.icon}</span>
-              {item.label}
-            </NavLink>
-          ))}
+        <nav className="flex-1 p-4 space-y-1">
+          {menuItems.map((item) => {
+            const Icon = item.icon;
+            return (
+              <NavLink
+                key={item.path}
+                to={item.path}
+                className={({ isActive }) =>
+                  `flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm transition-all ${
+                    isActive
+                      ? 'bg-teal-500 text-white shadow-lg shadow-teal-500/20'
+                      : 'text-slate-300 hover:bg-white/5 hover:text-white'
+                  }`
+                }
+              >
+                <Icon size={18} strokeWidth={2} />
+                {item.label}
+              </NavLink>
+            );
+          })}
         </nav>
 
-        <div className="p-3 border-t border-slate-700">
-          <div className="px-3 py-2 mb-2">
-            <p className="text-sm font-medium">{user?.nama}</p>
-            <p className="text-xs text-slate-400 capitalize">{user?.role}</p>
+        <div className="p-4 border-t border-white/10">
+          <div className="flex items-center gap-3 px-2 py-2 mb-2">
+            <div className="w-9 h-9 rounded-full bg-teal-500 flex items-center justify-center text-xs font-bold shrink-0">
+              {initials}
+            </div>
+            <div className="min-w-0">
+              <p className="text-sm font-medium truncate">{user?.nama}</p>
+              <p className="text-xs text-slate-400">{roleLabels[user?.role] || user?.role}</p>
+            </div>
           </div>
           <button
             onClick={handleLogout}
-            className="w-full text-left px-3 py-2 text-sm text-red-400 hover:bg-slate-800 rounded-lg transition"
+            className="w-full flex items-center gap-2 px-3.5 py-2.5 text-sm text-red-400 hover:bg-red-500/10 rounded-xl transition"
           >
-            🚪 Logout
+            <LogOut size={16} />
+            Logout
           </button>
         </div>
       </aside>
 
       {/* Content */}
-      <main className="flex-1 p-6 overflow-auto">
-        <Outlet />
-      </main>
+      <div className="flex-1 ml-64 flex flex-col">
+        {/* Topbar */}
+        <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-8 sticky top-0 z-10">
+          <div>
+            <h1 className="text-lg font-semibold text-slate-800">{currentPage?.label || 'Mini Clinic'}</h1>
+          </div>
+          <div className="flex items-center gap-3 text-sm text-slate-500">
+            {new Date().toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+          </div>
+        </header>
+
+        <main className="flex-1 p-8">
+          <Outlet />
+        </main>
+      </div>
     </div>
   );
 };
