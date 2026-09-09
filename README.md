@@ -1,6 +1,6 @@
 # Mini Clinic Information System
 
-Aplikasi web untuk membantu proses administrasi dan pelayanan pasien di klinik pratama secara terintegrasi — mulai dari pengelolaan data pasien, pendaftaran kunjungan, pengelolaan antrean, hingga pencatatan hasil pemeriksaan dokter.
+Mini Clinic Information System adalah aplikasi web untuk membantu proses administrasi dan pelayanan pasien di klinik secara terintegrasi, mulai dari pengelolaan data pasien, pendaftaran kunjungan, pengelolaan antrean, hingga pencatatan hasil pemeriksaan dokter.
 
 ## Tech Stack
 
