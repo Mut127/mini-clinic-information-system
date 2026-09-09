@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
 import api from '../services/api';
 import Modal from '../components/Modal';
+import ConfirmDialog from '../components/ConfirmDialog';
+import Toast from '../components/Toast';
 import { useAuth } from '../context/AuthContext';
 import SearchableSelect from '../components/SearchableSelect';
-import { Lock } from 'lucide-react';
+import { Lock, Pencil, Trash2 } from 'lucide-react';
 
 const statusColors = {
   menunggu: 'bg-amber-50 text-amber-700',
@@ -40,20 +42,33 @@ const Registrations = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const [form, setForm] = useState(emptyForm);
   const [formErrors, setFormErrors] = useState({});
+  const [isEdit, setIsEdit] = useState(false);
+  const [selectedRegistration, setSelectedRegistration] = useState(null);
 
   const canManage = user?.role === 'admin' || user?.role === 'petugas';
 
   const isPastDate = (dateString) => {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const visitDate = new Date(dateString);
-  visitDate.setHours(0, 0, 0, 0);
-  return visitDate < today;
-};
+    if (!dateString) return false;
+    const visitDateStr = dateString.split('T')[0];
+    const todayStr = new Date().toLocaleDateString('sv-SE');
+    return visitDateStr < todayStr;
+  };
 
-const isLocked = (registration) => {
-  return registration.status === 'selesai' || isPastDate(registration.tanggal_kunjungan);
-};
+  const isLocked = (registration) => {
+    return registration.status === 'selesai' || isPastDate(registration.tanggal_kunjungan);
+  };
+
+  // Edit & hapus hanya boleh kalau status masih 'menunggu' (belum diproses sama sekali)
+  const canEditOrDelete = (registration) => {
+    return registration.status === 'menunggu' && !isPastDate(registration.tanggal_kunjungan);
+  };
+
+    const [toast, setToast] = useState(null); // 
+  const [confirmState, setConfirmState] = useState({ isOpen: false });
+
+  const showToast = (message, type = 'success') => {
+    setToast({ message, type });
+  }
 
   const fetchRegistrations = async () => {
     setLoading(true);
@@ -97,32 +112,93 @@ const isLocked = (registration) => {
   const openAddModal = () => {
     setForm(emptyForm);
     setFormErrors({});
+    setIsEdit(false);
+    setSelectedRegistration(null);
     setModalOpen(true);
   };
 
-  const handleSubmit = async (e) => {
+  const openEditModal = (registration) => {
+    setForm({
+      patient_id: registration.patient_id,
+      doctor_id: registration.doctor_id || '',
+      poli_id: registration.poli_id,
+      tanggal_kunjungan: registration.tanggal_kunjungan?.split('T')[0] || '',
+      jenis_pembayaran: registration.jenis_pembayaran,
+      keluhan_awal: registration.keluhan_awal || '',
+    });
+    setSelectedRegistration(registration);
+    setIsEdit(true);
+    setFormErrors({});
+    setModalOpen(true);
+  };
+
+   const handleSubmit = async (e) => {
     e.preventDefault();
     setFormErrors({});
+
+    const errors = {};
+    if (!form.patient_id) errors.patient_id = 'Pasien wajib dipilih';
+    if (!form.poli_id) errors.poli_id = 'Poli wajib dipilih';
+    if (!form.doctor_id) errors.doctor_id = 'Dokter wajib dipilih';
+    if (!form.tanggal_kunjungan) errors.tanggal_kunjungan = 'Tanggal kunjungan wajib diisi';
+    if (!form.jenis_pembayaran) errors.jenis_pembayaran = 'Jenis pembayaran wajib diisi';
+    if (!form.keluhan_awal.trim()) errors.keluhan_awal = 'Keluhan awal wajib diisi';
+
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors);
+      return;
+    }
+
     try {
-      await api.post('/registrations', form);
+      if (isEdit) {
+        await api.put(`/registrations/${selectedRegistration.id}/edit`, form);
+        showToast('Data pendaftaran berhasil diubah');
+      } else {
+        await api.post('/registrations', form);
+        showToast('Pendaftaran berhasil disimpan');
+      }
       setModalOpen(false);
       fetchRegistrations();
     } catch (err) {
       if (err.response?.status === 422) {
         setFormErrors(err.response.data.errors);
       } else {
-        alert(err.response?.data?.message || 'Terjadi kesalahan');
+        showToast(err.response?.data?.message || 'Terjadi kesalahan', 'error');
       }
     }
   };
 
-  const handleStatusChange = async (id, newStatus) => {
-    try {
-      await api.put(`/registrations/${id}`, { status: newStatus });
-      fetchRegistrations();
-    } catch (err) {
-      alert(err.response?.data?.message || 'Gagal mengubah status');
-    }
+  const handleDelete = (id) => {
+    setConfirmState({
+      isOpen: true,
+      message: 'Yakin ingin menghapus data pendaftaran ini? Tindakan ini tidak bisa dibatalkan.',
+      onConfirm: async () => {
+        try {
+          await api.delete(`/registrations/${id}`);
+          showToast('Data pendaftaran berhasil dihapus');
+          fetchRegistrations();
+        } catch (err) {
+          showToast(err.response?.data?.message || 'Gagal menghapus data pendaftaran', 'error');
+        }
+      },
+    });
+  };
+
+  const handleStatusChange = (id, newStatus) => {
+    setConfirmState({
+      isOpen: true,
+      message: `Yakin ingin mengubah status menjadi "${statusLabels[newStatus]}"?`,
+      variant: 'primary',
+      onConfirm: async () => {
+        try {
+          await api.put(`/registrations/${id}`, { status: newStatus });
+          showToast('Status pendaftaran berhasil diubah');
+          fetchRegistrations();
+        } catch (err) {
+          showToast(err.response?.data?.message || 'Gagal mengubah status', 'error');
+        }
+      },
+    });
   };
 
   return (
@@ -165,15 +241,16 @@ const isLocked = (registration) => {
                 <th className="py-2 pr-4">Poli</th>
                 <th className="py-2 pr-4">Tgl Kunjungan</th>
                 <th className="py-2 pr-4">Pembayaran</th>
-                <th className="py-2 pr-4">Status</th>
-                {canManage && <th className="py-2 pr-4 text-right">Aksi</th>}
+                <th className="py-2 pr-4 text-center">Status</th>
+                {canManage && <th className="py-2 pr-4 text-center">Status Antrean</th>}
+                {canManage && <th className="py-2 pr-4 text-center">Aksi</th>}
               </tr>
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={7} className="py-6 text-center text-slate-400">Memuat data...</td></tr>
+                <tr><td colSpan={8} className="py-6 text-center text-slate-400">Memuat data...</td></tr>
               ) : registrations.length === 0 ? (
-                <tr><td colSpan={7} className="py-6 text-center text-slate-400">Belum ada data pendaftaran</td></tr>
+                <tr><td colSpan={8} className="py-6 text-center text-slate-400">Belum ada data pendaftaran</td></tr>
               ) : (
                 registrations.map((r) => (
                   <tr key={r.id} className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
@@ -186,40 +263,68 @@ const isLocked = (registration) => {
                     <td className="py-3 pr-4">{r.tanggal_kunjungan?.split('T')[0]}</td>
                     <td className="py-3 pr-4">{r.jenis_pembayaran}</td>
                     <td className="py-3 pr-4">
-  <span className={`inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full font-medium ${statusColors[r.status]}`}>
-    <span className="w-1.5 h-1.5 rounded-full bg-current"></span>
-    {statusLabels[r.status]}
-  </span>
-</td>
+                      <div className="flex justify-center">
+                        <span className={`inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full font-medium ${statusColors[r.status]}`}>
+                          <span className="w-1.5 h-1.5 rounded-full bg-current"></span>
+                          {statusLabels[r.status]}
+                        </span>
+                      </div>
+                    </td>
                     {canManage && (
-  <td className="py-3 pr-4">
-    <div className="flex justify-end">
-      {isLocked(r) ? (
-        <span className="inline-flex items-center gap-1.5 text-xs text-slate-400 px-3 py-1.5 bg-slate-50 rounded-lg border border-slate-200">
-          <Lock size={12} />
-          {r.status === 'selesai' ? 'Selesai' : 'Sudah lewat'}
-        </span>
-      ) : (
-        <select
-          value={r.status}
-          onChange={(e) => handleStatusChange(r.id, e.target.value)}
-          className={`text-xs font-medium rounded-lg px-3 py-1.5 border cursor-pointer focus:outline-none focus:ring-2 focus:ring-offset-1 ${
-            r.status === 'menunggu'
-              ? 'bg-amber-50 text-amber-700 border-amber-200 focus:ring-amber-400'
-              : r.status === 'check_in'
-              ? 'bg-blue-50 text-blue-700 border-blue-200 focus:ring-blue-400'
-              : 'bg-purple-50 text-purple-700 border-purple-200 focus:ring-purple-400'
-          }`}
-        >
-          <option value="menunggu">Menunggu</option>
-          <option value="check_in">Check In</option>
-          <option value="pemeriksaan">Pemeriksaan</option>
-          <option value="selesai">Selesai</option>
-        </select>
-      )}
-    </div>
-  </td>
-)}
+                      <td className="py-3 pr-4">
+                        <div className="flex justify-center">
+                          {isLocked(r) ? (
+                            <span className="inline-flex items-center gap-1.5 text-xs text-slate-400 px-3 py-1.5 bg-slate-50 rounded-lg border border-slate-200">
+                              <Lock size={12} />
+                              {r.status === 'selesai' ? 'Selesai' : 'Sudah lewat'}
+                            </span>
+                          ) : (
+                            <select
+                              value={r.status}
+                              onChange={(e) => handleStatusChange(r.id, e.target.value)}
+                              className={`text-xs font-medium rounded-lg px-3 py-1.5 border cursor-pointer focus:outline-none focus:ring-2 focus:ring-offset-1 ${
+                                r.status === 'menunggu'
+                                  ? 'bg-amber-50 text-amber-700 border-amber-200 focus:ring-amber-400'
+                                  : r.status === 'check_in'
+                                  ? 'bg-blue-50 text-blue-700 border-blue-200 focus:ring-blue-400'
+                                  : 'bg-purple-50 text-purple-700 border-purple-200 focus:ring-purple-400'
+                              }`}
+                            >
+                              <option value="menunggu">Menunggu</option>
+                              <option value="check_in">Check In</option>
+                              <option value="pemeriksaan">Pemeriksaan</option>
+                              <option value="selesai">Selesai</option>
+                            </select>
+                          )}
+                        </div>
+                      </td>
+                    )}
+                    {canManage && (
+                      <td className="py-3 pr-4">
+                        <div className="flex justify-center gap-1.5">
+                          {canEditOrDelete(r) ? (
+                            <>
+                              <button
+                                onClick={() => openEditModal(r)}
+                                title="Ubah"
+                                className="w-8 h-8 flex items-center justify-center rounded-lg text-amber-600 bg-amber-50 hover:bg-amber-100 transition"
+                              >
+                                <Pencil size={15} />
+                              </button>
+                              <button
+                                onClick={() => handleDelete(r.id)}
+                                title="Hapus"
+                                className="w-8 h-8 flex items-center justify-center rounded-lg text-red-600 bg-red-50 hover:bg-red-100 transition"
+                              >
+                                <Trash2 size={15} />
+                              </button>
+                            </>
+                          ) : (
+                            <span className="text-xs text-slate-300">-</span>
+                          )}
+                        </div>
+                      </td>
+                    )}
                   </tr>
                 ))
               )}
@@ -228,20 +333,21 @@ const isLocked = (registration) => {
         </div>
       </div>
 
-      <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title="Pendaftaran Baru">
+      <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title={isEdit ? 'Ubah Pendaftaran' : 'Pendaftaran Baru'}>
         <form onSubmit={handleSubmit} className="space-y-3">
           <div>
-  <label className="block text-xs font-medium text-slate-600 mb-1">Pasien</label>
-  <SearchableSelect
-    options={patients}
-    value={form.patient_id}
-    onChange={(val) => setForm({ ...form, patient_id: val })}
-    placeholder="-- Pilih Pasien --"
-    getLabel={(p) => `${p.nama} (${p.no_rm})`}
-    getValue={(p) => p.id}
-  />
-  {formErrors.patient_id && <p className="text-red-500 text-xs mt-1">{formErrors.patient_id}</p>}
-</div>
+            <label className="block text-xs font-medium text-slate-600 mb-1">Pasien</label>
+            <SearchableSelect
+              options={patients}
+              value={form.patient_id}
+              onChange={(val) => setForm({ ...form, patient_id: val })}
+              placeholder="-- Pilih Pasien --"
+              getLabel={(p) => `${p.nama} (${p.no_rm})`}
+              getValue={(p) => p.id}
+              disabled={isEdit}
+            />
+            {formErrors.patient_id && <p className="text-red-500 text-xs mt-1">{formErrors.patient_id}</p>}
+          </div>
 
           <div>
             <label className="block text-xs font-medium text-slate-600 mb-1">Poli</label>
@@ -268,6 +374,7 @@ const isLocked = (registration) => {
     getLabel={(d) => `${d.nama} (${d.nama_poli})`}
     getValue={(d) => d.id}
   />
+  {formErrors.doctor_id && <p className="text-red-500 text-xs mt-1">{formErrors.doctor_id}</p>}
 </div>
 
           <div className="grid grid-cols-2 gap-3">
@@ -309,10 +416,23 @@ const isLocked = (registration) => {
             type="submit"
             className="w-full bg-teal-600 hover:bg-teal-700 text-white text-sm font-medium py-2.5 rounded-lg mt-2"
           >
-            Daftarkan Pasien
+            {isEdit ? 'Simpan Perubahan' : 'Daftarkan Pasien'}
           </button>
         </form>
       </Modal>
+      <Toast
+        message={toast?.message}
+        type={toast?.type}
+        onClose={() => setToast(null)}
+      />
+
+      <ConfirmDialog
+        isOpen={confirmState.isOpen}
+        onClose={() => setConfirmState({ isOpen: false })}
+        onConfirm={confirmState.onConfirm}
+        message={confirmState.message}
+        variant={confirmState.variant}
+      />
     </div>
   );
 };

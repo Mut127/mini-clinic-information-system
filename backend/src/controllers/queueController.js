@@ -9,6 +9,13 @@ const getLocalDateString = () => {
   return `${year}-${month}-${day}`;
 };
 
+// Pemetaan status antrean -> status registrasi, supaya dua tabel selalu konsisten
+const queueToRegistrationStatus = {
+  menunggu: 'menunggu',
+  dipanggil: 'check_in',
+  selesai: 'selesai',
+};
+
 const getQueues = async (req, res) => {
   try {
     const { tanggal, status } = req.query;
@@ -84,29 +91,45 @@ const createQueue = async (req, res) => {
   }
 };
 
-// PUT /queues - buat panggil antrean ini
+// PUT /queues/:id/call - panggil antrean ini
 const callQueue = async (req, res) => {
+  const client = await pool.connect();
   try {
     const { id } = req.params;
+    await client.query('BEGIN');
 
-    const result = await pool.query(
+    const queueResult = await client.query(
       `UPDATE queues SET status = 'dipanggil', called_at = NOW() WHERE id = $1 RETURNING *`,
       [id]
     );
 
-    if (result.rows.length === 0) {
+    if (queueResult.rows.length === 0) {
+      await client.query('ROLLBACK');
       return error(res, 'Antrean tidak ditemukan', {}, 404);
     }
 
-    return success(res, result.rows[0], 'Antrean berhasil dipanggil');
+    const queue = queueResult.rows[0];
+
+    // Sinkronkan status registrasi supaya konsisten dengan antrean
+    await client.query(
+      `UPDATE registrations SET status = $1 WHERE id = $2`,
+      [queueToRegistrationStatus['dipanggil'], queue.registration_id]
+    );
+
+    await client.query('COMMIT');
+    return success(res, queue, 'Antrean berhasil dipanggil');
   } catch (err) {
+    await client.query('ROLLBACK');
     console.error(err);
     return error(res, 'Gagal memanggil antrean', {}, 500);
+  } finally {
+    client.release();
   }
 };
 
 // PUT /queues/:id/status - ubah status antrean manual
 const updateQueueStatus = async (req, res) => {
+  const client = await pool.connect();
   try {
     const { id } = req.params;
     const { status } = req.body;
@@ -118,19 +141,34 @@ const updateQueueStatus = async (req, res) => {
       }, 422);
     }
 
-    const result = await pool.query(
+    await client.query('BEGIN');
+
+    const queueResult = await client.query(
       `UPDATE queues SET status = $1 WHERE id = $2 RETURNING *`,
       [status, id]
     );
 
-    if (result.rows.length === 0) {
+    if (queueResult.rows.length === 0) {
+      await client.query('ROLLBACK');
       return error(res, 'Antrean tidak ditemukan', {}, 404);
     }
 
-    return success(res, result.rows[0], 'Status antrean berhasil diubah');
+    const queue = queueResult.rows[0];
+
+    // Sinkronkan status registrasi supaya konsisten dengan antrean
+    await client.query(
+      `UPDATE registrations SET status = $1 WHERE id = $2`,
+      [queueToRegistrationStatus[status], queue.registration_id]
+    );
+
+    await client.query('COMMIT');
+    return success(res, queue, 'Status antrean berhasil diubah');
   } catch (err) {
+    await client.query('ROLLBACK');
     console.error(err);
     return error(res, 'Gagal mengubah status antrean', {}, 500);
+  } finally {
+    client.release();
   }
 };
 

@@ -20,7 +20,7 @@ const Queues = () => {
   const [loading, setLoading] = useState(false);
   const [statusFilter, setStatusFilter] = useState('');
 
-  const canManage = user?.role === 'admin' || user?.role === 'petugas' || user?.role === 'dokter';
+  const canManage = user?.role === 'admin' || user?.role === 'petugas';
 
   const fetchQueues = async () => {
     setLoading(true);
@@ -129,27 +129,35 @@ const Queues = () => {
                       </span>
                     </td>
                     {canManage && (
-                      <td className="py-3 pr-4">
-                        <div className="flex justify-end gap-2">
-                          {q.status === 'menunggu' && (
-                            <button
-                              onClick={() => handleCall(q.id)}
-                              className="bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-1.5 rounded-md transition"
-                            >
-                              📢 Panggil
-                            </button>
-                          )}
-                          {q.status === 'dipanggil' && (
-                            <button
-                              onClick={() => handleStatusChange(q.id, 'selesai')}
-                              className="bg-green-600 hover:bg-green-700 text-white text-xs px-3 py-1.5 rounded-md transition"
-                            >
-                              ✓ Selesai
-                            </button>
-                          )}
-                        </div>
-                      </td>
-                    )}
+  <td className="py-3 pr-4">
+    <div className="flex justify-end gap-2">
+      {q.status === 'menunggu' && (
+        <button
+          onClick={() => handleCall(q.id)}
+          className="bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-1.5 rounded-md transition"
+        >
+          📢 Panggil
+        </button>
+      )}
+      {q.status === 'dipanggil' && (
+        <>
+          <button
+            onClick={() => handleCall(q.id)}
+            className="bg-amber-500 hover:bg-amber-600 text-white text-xs px-3 py-1.5 rounded-md transition"
+          >
+            🔁 Panggil Ulang
+          </button>
+          <button
+            onClick={() => handleStatusChange(q.id, 'selesai')}
+            className="bg-green-600 hover:bg-green-700 text-white text-xs px-3 py-1.5 rounded-md transition"
+          >
+            ✓ Selesai
+          </button>
+        </>
+      )}
+    </div>
+  </td>
+)}
                   </tr>
                 ))
               )}

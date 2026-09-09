@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import api from '../services/api';
 import Modal from '../components/Modal';
+import ConfirmDialog from '../components/ConfirmDialog';
+import Toast from '../components/Toast';
 import { useAuth } from '../context/AuthContext';
 import { Eye, Pencil, Trash2 } from 'lucide-react';
 
@@ -27,8 +29,15 @@ const Patients = () => {
   const [isEdit, setIsEdit] = useState(false);
   const [formErrors, setFormErrors] = useState({});
 
+  const [toast, setToast] = useState(null);
+  const [confirmState, setConfirmState] = useState({ isOpen: false });
+
   const canManage = user?.role === 'admin' || user?.role === 'petugas';
   const canDelete = user?.role === 'admin';
+
+  const showToast = (message, type = 'success') => {
+    setToast({ message, type });
+  };
 
   const fetchPatients = async (page = 1) => {
     setLoading(true);
@@ -83,11 +92,26 @@ const Patients = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setFormErrors({});
+
+    const errors = {};
+    if (!form.nik.trim()) errors.nik = 'NIK wajib diisi';
+    if (!form.nama.trim()) errors.nama = 'Nama wajib diisi';
+    if (!form.tanggal_lahir) errors.tanggal_lahir = 'Tanggal lahir wajib diisi';
+    if (!form.no_telepon.trim()) errors.no_telepon = 'No. telepon wajib diisi';
+    if (!form.alamat.trim()) errors.alamat = 'Alamat wajib diisi';
+
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors);
+      return;
+    }
+
     try {
       if (isEdit) {
         await api.put(`/patients/${selectedPatient.id}`, form);
+        showToast('Data pasien berhasil diubah');
       } else {
         await api.post('/patients', form);
+        showToast('Pasien berhasil ditambahkan');
       }
       setModalOpen(false);
       fetchPatients(pagination.page);
@@ -95,19 +119,25 @@ const Patients = () => {
       if (err.response?.status === 422) {
         setFormErrors(err.response.data.errors);
       } else {
-        alert(err.response?.data?.message || 'Terjadi kesalahan');
+        showToast(err.response?.data?.message || 'Terjadi kesalahan', 'error');
       }
     }
   };
 
-  const handleDelete = async (id) => {
-    if (!confirm('Yakin ingin menghapus data pasien ini?')) return;
-    try {
-      await api.delete(`/patients/${id}`);
-      fetchPatients(pagination.page);
-    } catch (err) {
-      alert(err.response?.data?.message || 'Gagal menghapus data');
-    }
+  const handleDelete = (id) => {
+    setConfirmState({
+      isOpen: true,
+      message: 'Yakin ingin menghapus data pasien ini? Tindakan ini tidak bisa dibatalkan.',
+      onConfirm: async () => {
+        try {
+          await api.delete(`/patients/${id}`);
+          showToast('Data pasien berhasil dihapus');
+          fetchPatients(pagination.page);
+        } catch (err) {
+          showToast(err.response?.data?.message || 'Gagal menghapus data', 'error');
+        }
+      },
+    });
   };
 
   return (
@@ -161,58 +191,58 @@ const Patients = () => {
               ) : (
                 patients.map((p) => (
                   <tr key={p.id} className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
-    <td className="py-3 pr-4">
-      <span className="text-xs font-semibold text-teal-700 bg-teal-50 px-2.5 py-1 rounded-full">
-        {p.no_rm}
-      </span>
-    </td>
-    <td className="py-3 pr-4">
-      <div className="flex items-center gap-3">
-        <div className="w-8 h-8 rounded-full bg-slate-200 text-slate-600 flex items-center justify-center text-xs font-bold shrink-0">
-          {p.nama?.charAt(0).toUpperCase()}
-        </div>
-        <span className="font-medium text-slate-800">{p.nama}</span>
-      </div>
-    </td>
-    <td className="py-3 pr-4 text-slate-500">{p.nik}</td>
-    <td className="py-3 pr-4">
-      <span className={`text-xs px-2 py-0.5 rounded-md font-medium ${
-        p.jenis_kelamin === 'L' ? 'bg-blue-50 text-blue-600' : 'bg-pink-50 text-pink-600'
-      }`}>
-        {p.jenis_kelamin === 'L' ? 'Laki-laki' : 'Perempuan'}
-      </span>
-    </td>
-    <td className="py-3 pr-4 text-slate-500">{p.no_telepon || '-'}</td>
-    <td className="py-3 pr-4">
-      <div className="flex justify-end gap-1.5">
-        <button
-          onClick={() => openDetailModal(p)}
-          title="Detail"
-          className="w-8 h-8 flex items-center justify-center rounded-lg text-blue-600 bg-blue-50 hover:bg-blue-100 transition"
-        >
-          <Eye size={15} />
-        </button>
-        {canManage && (
-          <button
-            onClick={() => openEditModal(p)}
-            title="Ubah"
-            className="w-8 h-8 flex items-center justify-center rounded-lg text-amber-600 bg-amber-50 hover:bg-amber-100 transition"
-          >
-            <Pencil size={15} />
-          </button>
-        )}
-        {canDelete && (
-          <button
-            onClick={() => handleDelete(p.id)}
-            title="Hapus"
-            className="w-8 h-8 flex items-center justify-center rounded-lg text-red-600 bg-red-50 hover:bg-red-100 transition"
-          >
-            <Trash2 size={15} />
-          </button>
-        )}
-      </div>
-    </td>
-  </tr>
+                    <td className="py-3 pr-4">
+                      <span className="text-xs font-semibold text-teal-700 bg-teal-50 px-2.5 py-1 rounded-full">
+                        {p.no_rm}
+                      </span>
+                    </td>
+                    <td className="py-3 pr-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-slate-200 text-slate-600 flex items-center justify-center text-xs font-bold shrink-0">
+                          {p.nama?.charAt(0).toUpperCase()}
+                        </div>
+                        <span className="font-medium text-slate-800">{p.nama}</span>
+                      </div>
+                    </td>
+                    <td className="py-3 pr-4 text-slate-500">{p.nik}</td>
+                    <td className="py-3 pr-4">
+                      <span className={`text-xs px-2 py-0.5 rounded-md font-medium ${
+                        p.jenis_kelamin === 'L' ? 'bg-blue-50 text-blue-600' : 'bg-pink-50 text-pink-600'
+                      }`}>
+                        {p.jenis_kelamin === 'L' ? 'Laki-laki' : 'Perempuan'}
+                      </span>
+                    </td>
+                    <td className="py-3 pr-4 text-slate-500">{p.no_telepon || '-'}</td>
+                    <td className="py-3 pr-4">
+                      <div className="flex justify-end gap-1.5">
+                        <button
+                          onClick={() => openDetailModal(p)}
+                          title="Detail"
+                          className="w-8 h-8 flex items-center justify-center rounded-lg text-blue-600 bg-blue-50 hover:bg-blue-100 transition"
+                        >
+                          <Eye size={15} />
+                        </button>
+                        {canManage && (
+                          <button
+                            onClick={() => openEditModal(p)}
+                            title="Ubah"
+                            className="w-8 h-8 flex items-center justify-center rounded-lg text-amber-600 bg-amber-50 hover:bg-amber-100 transition"
+                          >
+                            <Pencil size={15} />
+                          </button>
+                        )}
+                        {canDelete && (
+                          <button
+                            onClick={() => handleDelete(p.id)}
+                            title="Hapus"
+                            className="w-8 h-8 flex items-center justify-center rounded-lg text-red-600 bg-red-50 hover:bg-red-100 transition"
+                          >
+                            <Trash2 size={15} />
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
                 ))
               )}
             </tbody>
@@ -300,6 +330,7 @@ const Patients = () => {
               onChange={(e) => setForm({ ...form, no_telepon: e.target.value })}
               className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm"
             />
+            {formErrors.no_telepon && <p className="text-red-500 text-xs mt-1">{formErrors.no_telepon}</p>}
           </div>
 
           <div>
@@ -310,6 +341,7 @@ const Patients = () => {
               className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm"
               rows={2}
             />
+            {formErrors.alamat && <p className="text-red-500 text-xs mt-1">{formErrors.alamat}</p>}
           </div>
 
           <button
@@ -322,51 +354,62 @@ const Patients = () => {
       </Modal>
 
       {/* Modal Detail */}
-      {/* Modal Detail */}
-<Modal isOpen={detailModalOpen} onClose={() => setDetailModalOpen(false)} title="Detail Pasien">
-  {selectedPatient && (
-    <div>
-      {/* Header profil */}
-      <div className="flex items-center gap-4 pb-5 mb-5 border-b border-slate-100">
-        <div className="w-16 h-16 rounded-2xl bg-teal-500 flex items-center justify-center text-white text-2xl font-bold shrink-0">
-          {selectedPatient.nama?.charAt(0).toUpperCase()}
-        </div>
-        <div className="min-w-0">
-          <p className="font-bold text-slate-800 text-lg truncate">{selectedPatient.nama}</p>
-          <span className="inline-block mt-1 text-xs font-semibold text-teal-700 bg-teal-50 px-2.5 py-1 rounded-full">
-            {selectedPatient.no_rm}
-          </span>
-        </div>
-      </div>
+      <Modal isOpen={detailModalOpen} onClose={() => setDetailModalOpen(false)} title="Detail Pasien">
+        {selectedPatient && (
+          <div>
+            <div className="flex items-center gap-4 pb-5 mb-5 border-b border-slate-100">
+              <div className="w-16 h-16 rounded-2xl bg-teal-500 flex items-center justify-center text-white text-2xl font-bold shrink-0">
+                {selectedPatient.nama?.charAt(0).toUpperCase()}
+              </div>
+              <div className="min-w-0">
+                <p className="font-bold text-slate-800 text-lg truncate">{selectedPatient.nama}</p>
+                <span className="inline-block mt-1 text-xs font-semibold text-teal-700 bg-teal-50 px-2.5 py-1 rounded-full">
+                  {selectedPatient.no_rm}
+                </span>
+              </div>
+            </div>
 
-      {/* Grid info */}
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <p className="text-xs text-slate-400 mb-1">NIK</p>
-          <p className="text-sm font-medium text-slate-800">{selectedPatient.nik}</p>
-        </div>
-        <div>
-          <p className="text-xs text-slate-400 mb-1">Jenis Kelamin</p>
-          <p className="text-sm font-medium text-slate-800">
-            {selectedPatient.jenis_kelamin === 'L' ? 'Laki-laki' : 'Perempuan'}
-          </p>
-        </div>
-        <div>
-          <p className="text-xs text-slate-400 mb-1">Tanggal Lahir</p>
-          <p className="text-sm font-medium text-slate-800">{selectedPatient.tanggal_lahir?.split('T')[0]}</p>
-        </div>
-        <div>
-          <p className="text-xs text-slate-400 mb-1">No. Telepon</p>
-          <p className="text-sm font-medium text-slate-800">{selectedPatient.no_telepon || '-'}</p>
-        </div>
-        <div className="col-span-2">
-          <p className="text-xs text-slate-400 mb-1">Alamat</p>
-          <p className="text-sm font-medium text-slate-800">{selectedPatient.alamat || '-'}</p>
-        </div>
-      </div>
-    </div>
-  )}
-</Modal>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <p className="text-xs text-slate-400 mb-1">NIK</p>
+                <p className="text-sm font-medium text-slate-800">{selectedPatient.nik}</p>
+              </div>
+              <div>
+                <p className="text-xs text-slate-400 mb-1">Jenis Kelamin</p>
+                <p className="text-sm font-medium text-slate-800">
+                  {selectedPatient.jenis_kelamin === 'L' ? 'Laki-laki' : 'Perempuan'}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-slate-400 mb-1">Tanggal Lahir</p>
+                <p className="text-sm font-medium text-slate-800">{selectedPatient.tanggal_lahir?.split('T')[0]}</p>
+              </div>
+              <div>
+                <p className="text-xs text-slate-400 mb-1">No. Telepon</p>
+                <p className="text-sm font-medium text-slate-800">{selectedPatient.no_telepon || '-'}</p>
+              </div>
+              <div className="col-span-2">
+                <p className="text-xs text-slate-400 mb-1">Alamat</p>
+                <p className="text-sm font-medium text-slate-800">{selectedPatient.alamat || '-'}</p>
+              </div>
+            </div>
+          </div>
+        )}
+      </Modal>
+
+      <Toast
+        message={toast?.message}
+        type={toast?.type}
+        onClose={() => setToast(null)}
+      />
+
+      <ConfirmDialog
+        isOpen={confirmState.isOpen}
+        onClose={() => setConfirmState({ isOpen: false })}
+        onConfirm={confirmState.onConfirm}
+        message={confirmState.message}
+        variant={confirmState.variant}
+      />
     </div>
   );
 };

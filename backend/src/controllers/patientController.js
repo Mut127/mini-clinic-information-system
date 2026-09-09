@@ -140,11 +140,27 @@ const updatePatient = async (req, res) => {
 const deletePatient = async (req, res) => {
   try {
     const { id } = req.params;
-    const result = await pool.query('DELETE FROM patients WHERE id = $1 RETURNING id', [id]);
 
-    if (result.rows.length === 0) {
+    const existingPatient = await pool.query('SELECT id FROM patients WHERE id = $1', [id]);
+    if (existingPatient.rows.length === 0) {
       return error(res, 'Pasien tidak ditemukan', {}, 404);
     }
+
+    // Cegah hapus pasien yang sudah punya riwayat pendaftaran/kunjungan
+    const registrationCheck = await pool.query(
+      'SELECT id FROM registrations WHERE patient_id = $1 LIMIT 1',
+      [id]
+    );
+    if (registrationCheck.rows.length > 0) {
+      return error(
+        res,
+        'Pasien tidak bisa dihapus karena sudah memiliki riwayat pendaftaran/kunjungan',
+        {},
+        422
+      );
+    }
+
+    const result = await pool.query('DELETE FROM patients WHERE id = $1 RETURNING id', [id]);
 
     return success(res, {}, 'Pasien berhasil dihapus');
   } catch (err) {

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import api from '../services/api';
 import SearchableSelect from '../components/SearchableSelect';
 import { useAuth } from '../context/AuthContext';
+import { Stethoscope, Plus, X, Pill, Activity, ClipboardList } from 'lucide-react';
 
 const emptyForm = {
   registration_id: '',
@@ -18,19 +19,21 @@ const emptyForm = {
   resep: [{ nama_obat: '', dosis: '', jumlah: '', aturan_pakai: '' }],
 };
 
+const SectionLabel = ({ children }) => (
+  <h3 className="text-sm font-semibold text-slate-700 mb-3">{children}</h3>
+);
+
 const MedicalRecords = () => {
   const { user } = useAuth();
   const isDokter = user?.role === 'dokter';
   const [activeTab, setActiveTab] = useState(isDokter ? 'input' : 'riwayat');
 
-  // --- Input Pemeriksaan ---
   const [registrations, setRegistrations] = useState([]);
   const [form, setForm] = useState(emptyForm);
   const [formErrors, setFormErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
   const [successMsg, setSuccessMsg] = useState('');
 
-  // --- Riwayat ---
   const [patients, setPatients] = useState([]);
   const [selectedPatientId, setSelectedPatientId] = useState('');
   const [history, setHistory] = useState([]);
@@ -38,7 +41,6 @@ const MedicalRecords = () => {
 
   const fetchRegistrations = async () => {
     try {
-      // Ambil pendaftaran yang belum selesai, biar dokter tau siapa yang perlu diperiksa
       const res = await api.get('/registrations');
       setRegistrations(res.data.data.filter((r) => r.status !== 'selesai'));
     } catch (err) {
@@ -73,7 +75,6 @@ const MedicalRecords = () => {
     setSuccessMsg('');
   };
 
-  // --- Handler untuk field dinamis: Tindakan ---
   const addTindakan = () => {
     setForm({ ...form, tindakan: [...form.tindakan, { nama_tindakan: '', keterangan: '' }] });
   };
@@ -86,7 +87,6 @@ const MedicalRecords = () => {
     setForm({ ...form, tindakan: updated });
   };
 
-  // --- Handler untuk field dinamis: Resep ---
   const addResep = () => {
     setForm({ ...form, resep: [...form.resep, { nama_obat: '', dosis: '', jumlah: '', aturan_pakai: '' }] });
   };
@@ -153,7 +153,7 @@ const MedicalRecords = () => {
           <button
             onClick={() => setActiveTab('input')}
             className={`px-4 py-2 text-sm rounded-lg font-medium transition ${
-              activeTab === 'input' ? 'bg-teal-600 text-white' : 'bg-white text-slate-600 border border-slate-200'
+              activeTab === 'input' ? 'bg-teal-600 text-white shadow-sm' : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
             }`}
           >
             Input Pemeriksaan
@@ -162,7 +162,7 @@ const MedicalRecords = () => {
         <button
           onClick={() => setActiveTab('riwayat')}
           className={`px-4 py-2 text-sm rounded-lg font-medium transition ${
-            activeTab === 'riwayat' ? 'bg-teal-600 text-white' : 'bg-white text-slate-600 border border-slate-200'
+            activeTab === 'riwayat' ? 'bg-teal-600 text-white shadow-sm' : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
           }`}
         >
           Riwayat Pemeriksaan
@@ -171,13 +171,16 @@ const MedicalRecords = () => {
 
       {/* TAB: Input Pemeriksaan */}
       {activeTab === 'input' && isDokter && (
-        <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-6">
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
           {successMsg && (
-            <div className="bg-green-50 text-green-700 text-sm rounded-lg px-4 py-2 mb-4">{successMsg}</div>
+            <div className="flex items-center gap-2 bg-green-50 text-green-700 text-sm font-medium rounded-xl px-4 py-3 mb-5 border border-green-100">
+              <Stethoscope size={16} />
+              {successMsg}
+            </div>
           )}
 
-          <div className="mb-5">
-            <label className="block text-xs font-medium text-slate-600 mb-1">Pilih Pendaftaran Pasien</label>
+          <div className="mb-6">
+            <label className="block text-xs font-medium text-slate-500 mb-1.5">Pilih Pendaftaran Pasien</label>
             <SearchableSelect
               options={registrations}
               value={form.registration_id}
@@ -191,21 +194,24 @@ const MedicalRecords = () => {
 
           {form.registration_id && (
             <form onSubmit={handleSubmit} className="space-y-6">
-              {/* Subjective */}
-              <div>
-                <h3 className="text-sm font-semibold text-teal-700 mb-2">S — Subjective (Keluhan Pasien)</h3>
+              {/* Keluhan Pasien */}
+              <div className="bg-slate-50 rounded-xl p-4">
+                <SectionLabel>Keluhan Pasien</SectionLabel>
                 <textarea
                   value={form.keluhan}
                   onChange={(e) => setForm({ ...form, keluhan: e.target.value })}
-                  className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm"
+                  className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-teal-500"
                   rows={2}
                   placeholder="Keluhan yang disampaikan pasien..."
                 />
               </div>
 
-              {/* Objective */}
-              <div>
-                <h3 className="text-sm font-semibold text-teal-700 mb-2">O — Objective (Pemeriksaan Fisik)</h3>
+              {/* Pemeriksaan Fisik */}
+              <div className="bg-slate-50 rounded-xl p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <Activity size={16} className="text-teal-600" />
+                  <SectionLabel>Pemeriksaan Fisik</SectionLabel>
+                </div>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                   <div>
                     <label className="block text-xs text-slate-500 mb-1">Tekanan Darah</label>
@@ -214,7 +220,7 @@ const MedicalRecords = () => {
                       value={form.tekanan_darah}
                       onChange={(e) => setForm({ ...form, tekanan_darah: e.target.value })}
                       placeholder="120/80"
-                      className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm"
+                      className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-teal-500"
                     />
                   </div>
                   <div>
@@ -224,7 +230,7 @@ const MedicalRecords = () => {
                       value={form.suhu_tubuh}
                       onChange={(e) => setForm({ ...form, suhu_tubuh: e.target.value })}
                       placeholder="36.5"
-                      className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm"
+                      className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-teal-500"
                     />
                   </div>
                   <div>
@@ -233,7 +239,7 @@ const MedicalRecords = () => {
                       type="text"
                       value={form.berat_badan}
                       onChange={(e) => setForm({ ...form, berat_badan: e.target.value })}
-                      className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm"
+                      className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-teal-500"
                     />
                   </div>
                   <div>
@@ -242,43 +248,50 @@ const MedicalRecords = () => {
                       type="text"
                       value={form.tinggi_badan}
                       onChange={(e) => setForm({ ...form, tinggi_badan: e.target.value })}
-                      className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm"
+                      className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-teal-500"
                     />
                   </div>
                 </div>
               </div>
 
-              {/* Assessment */}
-              <div>
-                <h3 className="text-sm font-semibold text-teal-700 mb-2">A — Assessment (Diagnosa)</h3>
-                <textarea
-                  value={form.diagnosa}
-                  onChange={(e) => setForm({ ...form, diagnosa: e.target.value })}
-                  className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm"
-                  rows={2}
-                  placeholder="Diagnosa dokter..."
-                />
-                {formErrors.diagnosa && <p className="text-red-500 text-xs mt-1">{formErrors.diagnosa}</p>}
-              </div>
-
-              {/* Plan */}
-              <div>
-                <h3 className="text-sm font-semibold text-teal-700 mb-2">P — Plan (Rencana Terapi)</h3>
-                <textarea
-                  value={form.rencana_terapi}
-                  onChange={(e) => setForm({ ...form, rencana_terapi: e.target.value })}
-                  className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm"
-                  rows={2}
-                  placeholder="Rencana terapi..."
-                />
+              {/* Diagnosa & Terapi */}
+              <div className="grid sm:grid-cols-2 gap-4">
+                <div className="bg-slate-50 rounded-xl p-4">
+                  <SectionLabel>Diagnosa</SectionLabel>
+                  <textarea
+                    value={form.diagnosa}
+                    onChange={(e) => setForm({ ...form, diagnosa: e.target.value })}
+                    className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-teal-500"
+                    rows={3}
+                    placeholder="Diagnosa dokter..."
+                  />
+                  {formErrors.diagnosa && <p className="text-red-500 text-xs mt-1">{formErrors.diagnosa}</p>}
+                </div>
+                <div className="bg-slate-50 rounded-xl p-4">
+                  <SectionLabel>Rencana Terapi</SectionLabel>
+                  <textarea
+                    value={form.rencana_terapi}
+                    onChange={(e) => setForm({ ...form, rencana_terapi: e.target.value })}
+                    className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-teal-500"
+                    rows={3}
+                    placeholder="Rencana terapi..."
+                  />
+                </div>
               </div>
 
               {/* Tindakan Medis */}
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <h3 className="text-sm font-semibold text-slate-700">Tindakan Medis</h3>
-                  <button type="button" onClick={addTindakan} className="text-teal-600 text-xs font-medium hover:underline">
-                    + Tambah Tindakan
+              <div className="bg-slate-50 rounded-xl p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <ClipboardList size={16} className="text-teal-600" />
+                    <SectionLabel>Tindakan Medis</SectionLabel>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={addTindakan}
+                    className="flex items-center gap-1 text-teal-600 text-xs font-medium hover:text-teal-700 transition"
+                  >
+                    <Plus size={14} /> Tambah
                   </button>
                 </div>
                 <div className="space-y-2">
@@ -289,17 +302,23 @@ const MedicalRecords = () => {
                         value={t.nama_tindakan}
                         onChange={(e) => updateTindakan(i, 'nama_tindakan', e.target.value)}
                         placeholder="Nama tindakan"
-                        className="flex-1 border border-slate-300 rounded-lg px-3 py-2 text-sm"
+                        className="flex-1 border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-teal-500"
                       />
                       <input
                         type="text"
                         value={t.keterangan}
                         onChange={(e) => updateTindakan(i, 'keterangan', e.target.value)}
                         placeholder="Keterangan (opsional)"
-                        className="flex-1 border border-slate-300 rounded-lg px-3 py-2 text-sm"
+                        className="flex-1 border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-teal-500"
                       />
                       {form.tindakan.length > 1 && (
-                        <button type="button" onClick={() => removeTindakan(i)} className="text-red-500 px-2">×</button>
+                        <button
+                          type="button"
+                          onClick={() => removeTindakan(i)}
+                          className="w-9 h-9 flex items-center justify-center rounded-lg text-red-500 hover:bg-red-50 transition shrink-0"
+                        >
+                          <X size={16} />
+                        </button>
                       )}
                     </div>
                   ))}
@@ -307,11 +326,18 @@ const MedicalRecords = () => {
               </div>
 
               {/* Resep Obat */}
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <h3 className="text-sm font-semibold text-slate-700">Resep Obat</h3>
-                  <button type="button" onClick={addResep} className="text-teal-600 text-xs font-medium hover:underline">
-                    + Tambah Obat
+              <div className="bg-slate-50 rounded-xl p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <Pill size={16} className="text-teal-600" />
+                    <SectionLabel>Resep Obat</SectionLabel>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={addResep}
+                    className="flex items-center gap-1 text-teal-600 text-xs font-medium hover:text-teal-700 transition"
+                  >
+                    <Plus size={14} /> Tambah
                   </button>
                 </div>
                 <div className="space-y-2">
@@ -322,21 +348,21 @@ const MedicalRecords = () => {
                         value={r.nama_obat}
                         onChange={(e) => updateResep(i, 'nama_obat', e.target.value)}
                         placeholder="Nama obat"
-                        className="sm:col-span-2 border border-slate-300 rounded-lg px-3 py-2 text-sm"
+                        className="sm:col-span-2 border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-teal-500"
                       />
                       <input
                         type="text"
                         value={r.dosis}
                         onChange={(e) => updateResep(i, 'dosis', e.target.value)}
                         placeholder="Dosis"
-                        className="border border-slate-300 rounded-lg px-3 py-2 text-sm"
+                        className="border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-teal-500"
                       />
                       <input
                         type="text"
                         value={r.jumlah}
                         onChange={(e) => updateResep(i, 'jumlah', e.target.value)}
                         placeholder="Jumlah"
-                        className="border border-slate-300 rounded-lg px-3 py-2 text-sm"
+                        className="border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-teal-500"
                       />
                       <div className="flex gap-2">
                         <input
@@ -344,10 +370,16 @@ const MedicalRecords = () => {
                           value={r.aturan_pakai}
                           onChange={(e) => updateResep(i, 'aturan_pakai', e.target.value)}
                           placeholder="Aturan pakai"
-                          className="flex-1 border border-slate-300 rounded-lg px-3 py-2 text-sm"
+                          className="flex-1 border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-teal-500"
                         />
                         {form.resep.length > 1 && (
-                          <button type="button" onClick={() => removeResep(i)} className="text-red-500 px-1">×</button>
+                          <button
+                            type="button"
+                            onClick={() => removeResep(i)}
+                            className="w-9 h-9 flex items-center justify-center rounded-lg text-red-500 hover:bg-red-50 transition shrink-0"
+                          >
+                            <X size={16} />
+                          </button>
                         )}
                       </div>
                     </div>
@@ -358,7 +390,7 @@ const MedicalRecords = () => {
               <button
                 type="submit"
                 disabled={submitting}
-                className="w-full bg-teal-600 hover:bg-teal-700 text-white font-medium py-3 rounded-lg text-sm disabled:opacity-50"
+                className="w-full bg-teal-600 hover:bg-teal-700 text-white font-medium py-3 rounded-xl text-sm shadow-sm transition disabled:opacity-50"
               >
                 {submitting ? 'Menyimpan...' : 'Simpan Pemeriksaan'}
               </button>
@@ -369,9 +401,9 @@ const MedicalRecords = () => {
 
       {/* TAB: Riwayat Pemeriksaan */}
       {activeTab === 'riwayat' && (
-        <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-6">
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
           <div className="mb-5 max-w-md">
-            <label className="block text-xs font-medium text-slate-600 mb-1">Pilih Pasien</label>
+            <label className="block text-xs font-medium text-slate-500 mb-1.5">Pilih Pasien</label>
             <SearchableSelect
               options={patients}
               value={selectedPatientId}
@@ -390,103 +422,102 @@ const MedicalRecords = () => {
             <p className="text-slate-400 text-sm">Belum ada riwayat pemeriksaan untuk pasien ini.</p>
           ) : (
             <div className="space-y-5">
-  {history.map((h) => (
-    <div key={h.id} className="border border-slate-200 rounded-xl overflow-hidden shadow-sm">
-      {/* Header */}
-      <div className="bg-slate-800 px-5 py-3 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <span className="bg-teal-500 text-white text-xs font-semibold px-2.5 py-1 rounded-md">
-            {new Date(h.created_at).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })}
-          </span>
-          <span className="text-slate-400 text-xs">
-            {new Date(h.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
-          </span>
-        </div>
-        <span className="text-slate-300 text-xs flex items-center gap-1">
-          🩺 Dr. {h.nama_dokter || '-'}
-        </span>
-      </div>
+              {history.map((h) => (
+                <div key={h.id} className="border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
+                  <div className="bg-slate-800 px-5 py-3 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="bg-teal-500 text-white text-xs font-semibold px-2.5 py-1 rounded-md">
+                        {new Date(h.created_at).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })}
+                      </span>
+                      <span className="text-slate-400 text-xs">
+                        {new Date(h.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                    </div>
+                    <span className="text-slate-300 text-xs flex items-center gap-1.5">
+                      <Stethoscope size={13} />
+                      Dr. {h.nama_dokter || '-'}
+                    </span>
+                  </div>
 
-      <div className="p-5 bg-white">
-        {/* Tanda Vital */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
-          <div className="bg-red-50 rounded-lg p-3 text-center">
-            <p className="text-[11px] text-red-500 font-medium mb-0.5">Tekanan Darah</p>
-            <p className="text-sm font-bold text-red-700">{h.tekanan_darah || '-'}</p>
-          </div>
-          <div className="bg-orange-50 rounded-lg p-3 text-center">
-            <p className="text-[11px] text-orange-500 font-medium mb-0.5">Suhu Tubuh</p>
-            <p className="text-sm font-bold text-orange-700">{h.suhu_tubuh || '-'}°C</p>
-          </div>
-          <div className="bg-blue-50 rounded-lg p-3 text-center">
-            <p className="text-[11px] text-blue-500 font-medium mb-0.5">Berat Badan</p>
-            <p className="text-sm font-bold text-blue-700">{h.berat_badan || '-'} kg</p>
-          </div>
-          <div className="bg-purple-50 rounded-lg p-3 text-center">
-            <p className="text-[11px] text-purple-500 font-medium mb-0.5">Tinggi Badan</p>
-            <p className="text-sm font-bold text-purple-700">{h.tinggi_badan || '-'} cm</p>
-          </div>
-        </div>
+                  <div className="p-5 bg-white">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
+                      <div className="bg-red-50 rounded-xl p-3 text-center">
+                        <p className="text-[11px] text-red-500 font-medium mb-0.5">Tekanan Darah</p>
+                        <p className="text-sm font-bold text-red-700">{h.tekanan_darah || '-'}</p>
+                      </div>
+                      <div className="bg-orange-50 rounded-xl p-3 text-center">
+                        <p className="text-[11px] text-orange-500 font-medium mb-0.5">Suhu Tubuh</p>
+                        <p className="text-sm font-bold text-orange-700">{h.suhu_tubuh || '-'}°C</p>
+                      </div>
+                      <div className="bg-blue-50 rounded-xl p-3 text-center">
+                        <p className="text-[11px] text-blue-500 font-medium mb-0.5">Berat Badan</p>
+                        <p className="text-sm font-bold text-blue-700">{h.berat_badan || '-'} kg</p>
+                      </div>
+                      <div className="bg-purple-50 rounded-xl p-3 text-center">
+                        <p className="text-[11px] text-purple-500 font-medium mb-0.5">Tinggi Badan</p>
+                        <p className="text-sm font-bold text-purple-700">{h.tinggi_badan || '-'} cm</p>
+                      </div>
+                    </div>
 
-        {/* SOAP Sections */}
-        <div className="space-y-3">
-          <div className="border-l-4 border-slate-300 pl-3">
-            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Keluhan</p>
-            <p className="text-sm text-slate-700 mt-0.5">{h.keluhan || '-'}</p>
-          </div>
+                    <div className="space-y-3">
+                      <div className="border-l-4 border-slate-300 pl-3">
+                        <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Keluhan</p>
+                        <p className="text-sm text-slate-700 mt-0.5">{h.keluhan || '-'}</p>
+                      </div>
 
-          <div className="border-l-4 border-teal-400 pl-3">
-            <p className="text-xs font-semibold text-teal-600 uppercase tracking-wide">Diagnosa</p>
-            <p className="text-sm text-slate-700 mt-0.5 font-medium">{h.diagnosa}</p>
-          </div>
+                      <div className="border-l-4 border-teal-400 pl-3">
+                        <p className="text-xs font-semibold text-teal-600 uppercase tracking-wide">Diagnosa</p>
+                        <p className="text-sm text-slate-700 mt-0.5 font-medium">{h.diagnosa}</p>
+                      </div>
 
-          <div className="border-l-4 border-blue-400 pl-3">
-            <p className="text-xs font-semibold text-blue-600 uppercase tracking-wide">Rencana Terapi</p>
-            <p className="text-sm text-slate-700 mt-0.5">{h.rencana_terapi || '-'}</p>
-          </div>
-        </div>
+                      <div className="border-l-4 border-blue-400 pl-3">
+                        <p className="text-xs font-semibold text-blue-600 uppercase tracking-wide">Rencana Terapi</p>
+                        <p className="text-sm text-slate-700 mt-0.5">{h.rencana_terapi || '-'}</p>
+                      </div>
+                    </div>
 
-        {/* Tindakan & Resep */}
-        {(h.tindakan?.length > 0 || h.resep?.length > 0) && (
-          <div className="grid sm:grid-cols-2 gap-4 mt-5 pt-4 border-t border-slate-100">
-            {h.tindakan?.length > 0 && (
-              <div>
-                <p className="text-xs font-semibold text-slate-700 mb-2 flex items-center gap-1">
-                  🔧 Tindakan Medis
-                </p>
-                <ul className="space-y-1.5">
-                  {h.tindakan.map((t) => (
-                    <li key={t.id} className="text-xs bg-slate-50 rounded-lg px-3 py-2">
-                      <span className="font-medium text-slate-700">{t.nama_tindakan}</span>
-                      {t.keterangan && <span className="text-slate-500"> - {t.keterangan}</span>}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
+                    {(h.tindakan?.length > 0 || h.resep?.length > 0) && (
+                      <div className="grid sm:grid-cols-2 gap-4 mt-5 pt-4 border-t border-slate-100">
+                        {h.tindakan?.length > 0 && (
+                          <div>
+                            <p className="text-xs font-semibold text-slate-700 mb-2 flex items-center gap-1.5">
+                              <ClipboardList size={13} className="text-slate-500" />
+                              Tindakan Medis
+                            </p>
+                            <ul className="space-y-1.5">
+                              {h.tindakan.map((t) => (
+                                <li key={t.id} className="text-xs bg-slate-50 rounded-lg px-3 py-2">
+                                  <span className="font-medium text-slate-700">{t.nama_tindakan}</span>
+                                  {t.keterangan && <span className="text-slate-500"> - {t.keterangan}</span>}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
 
-            {h.resep?.length > 0 && (
-              <div>
-                <p className="text-xs font-semibold text-slate-700 mb-2 flex items-center gap-1">
-                  💊 Resep Obat
-                </p>
-                <ul className="space-y-1.5">
-                  {h.resep.map((r) => (
-                    <li key={r.id} className="text-xs bg-teal-50 rounded-lg px-3 py-2">
-                      <span className="font-medium text-teal-800">{r.nama_obat}</span>
-                      <span className="text-teal-600"> · {r.dosis}, {r.jumlah}</span>
-                      <div className="text-teal-500 mt-0.5">{r.aturan_pakai}</div>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-    </div>
-  ))}
-</div>
+                        {h.resep?.length > 0 && (
+                          <div>
+                            <p className="text-xs font-semibold text-slate-700 mb-2 flex items-center gap-1.5">
+                              <Pill size={13} className="text-teal-600" />
+                              Resep Obat
+                            </p>
+                            <ul className="space-y-1.5">
+                              {h.resep.map((r) => (
+                                <li key={r.id} className="text-xs bg-teal-50 rounded-lg px-3 py-2">
+                                  <span className="font-medium text-teal-800">{r.nama_obat}</span>
+                                  <span className="text-teal-600"> · {r.dosis}, {r.jumlah}</span>
+                                  <div className="text-teal-500 mt-0.5">{r.aturan_pakai}</div>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
           )}
         </div>
       )}

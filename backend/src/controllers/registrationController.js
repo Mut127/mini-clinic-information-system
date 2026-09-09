@@ -43,14 +43,16 @@ const createRegistration = async (req, res) => {
     const { patient_id, doctor_id, poli_id, tanggal_kunjungan, jenis_pembayaran, keluhan_awal } = req.body;
 
     const errors = {};
-    if (!patient_id) errors.patient_id = 'Pasien wajib dipilih';
-    if (!poli_id) errors.poli_id = 'Poli wajib dipilih';
-    if (!tanggal_kunjungan) errors.tanggal_kunjungan = 'Tanggal kunjungan wajib diisi';
-    if (!jenis_pembayaran) errors.jenis_pembayaran = 'Jenis pembayaran wajib diisi';
+if (!patient_id) errors.patient_id = 'Pasien wajib dipilih';
+if (!poli_id) errors.poli_id = 'Poli wajib dipilih';
+if (!doctor_id) errors.doctor_id = 'Dokter wajib dipilih';
+if (!tanggal_kunjungan) errors.tanggal_kunjungan = 'Tanggal kunjungan wajib diisi';
+if (!jenis_pembayaran) errors.jenis_pembayaran = 'Jenis pembayaran wajib diisi';
+if (!keluhan_awal || !keluhan_awal.trim()) errors.keluhan_awal = 'Keluhan awal wajib diisi';
 
-    if (Object.keys(errors).length > 0) {
-      return error(res, 'Validation Error', errors, 422);
-    }
+if (Object.keys(errors).length > 0) {
+  return error(res, 'Validation Error', errors, 422);
+}
 
     // Cek pasien ada
     const patientCheck = await pool.query('SELECT id FROM patients WHERE id = $1', [patient_id]);
@@ -61,11 +63,11 @@ const createRegistration = async (req, res) => {
     await client.query('BEGIN');
 
     // Insert registration
-    const regResult = await client.query(
-      `INSERT INTO registrations (patient_id, doctor_id, poli_id, tanggal_kunjungan, jenis_pembayaran, keluhan_awal, status)
-       VALUES ($1, $2, $3, $4, $5, $6, 'menunggu') RETURNING *`,
-      [patient_id, doctor_id || null, poli_id, tanggal_kunjungan, jenis_pembayaran, keluhan_awal]
-    );
+   const regResult = await client.query(
+  `INSERT INTO registrations (patient_id, doctor_id, poli_id, tanggal_kunjungan, jenis_pembayaran, keluhan_awal, status)
+   VALUES ($1, $2, $3, $4, $5, $6, 'menunggu') RETURNING *`,
+  [patient_id, doctor_id, poli_id, tanggal_kunjungan, jenis_pembayaran, keluhan_awal]
+);
 
     const registration = regResult.rows[0];
 
@@ -130,4 +132,112 @@ const updateRegistrationStatus = async (req, res) => {
   }
 };
 
-module.exports = { getRegistrations, createRegistration, updateRegistrationStatus };
+// PUT /registrations/:id/edit - edit detail pendaftaran (bukan ubah status)
+const updateRegistration = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { patient_id, doctor_id, poli_id, tanggal_kunjungan, jenis_pembayaran, keluhan_awal } = req.body;
+
+    const existing = await pool.query('SELECT * FROM registrations WHERE id = $1', [id]);
+    if (existing.rows.length === 0) {
+      return error(res, 'Data pendaftaran tidak ditemukan', {}, 404);
+    }
+
+    if (existing.rows[0].status !== 'menunggu') {
+      return error(
+        res,
+        'Pendaftaran tidak bisa diubah karena sudah diproses (bukan status menunggu)',
+        {},
+        422
+      );
+    }
+
+    // Validasi semua field wajib diisi, sama seperti createRegistration
+    const errors = {};
+    if (!patient_id) errors.patient_id = 'Pasien wajib dipilih';
+    if (!poli_id) errors.poli_id = 'Poli wajib dipilih';
+    if (!doctor_id) errors.doctor_id = 'Dokter wajib dipilih';
+    if (!tanggal_kunjungan) errors.tanggal_kunjungan = 'Tanggal kunjungan wajib diisi';
+    if (!jenis_pembayaran) errors.jenis_pembayaran = 'Jenis pembayaran wajib diisi';
+    if (!keluhan_awal || !keluhan_awal.trim()) errors.keluhan_awal = 'Keluhan awal wajib diisi';
+
+    if (Object.keys(errors).length > 0) {
+      return error(res, 'Validation Error', errors, 422);
+    }
+
+    // Cek pasien ada
+    const patientCheck = await pool.query('SELECT id FROM patients WHERE id = $1', [patient_id]);
+    if (patientCheck.rows.length === 0) {
+      return error(res, 'Validation Error', { patient_id: 'Pasien tidak ditemukan' }, 422);
+    }
+
+    const result = await pool.query(
+  `UPDATE registrations SET
+    patient_id = $1,
+    doctor_id = $2,
+    poli_id = $3,
+    tanggal_kunjungan = $4,
+    jenis_pembayaran = $5,
+    keluhan_awal = $6
+   WHERE id = $7 RETURNING *`,
+  [patient_id, doctor_id, poli_id, tanggal_kunjungan, jenis_pembayaran, keluhan_awal, id]
+);
+
+    return success(res, result.rows[0], 'Data pendaftaran berhasil diubah');
+  } catch (err) {
+    console.error(err);
+    return error(res, 'Gagal mengubah data pendaftaran', {}, 500);
+  }
+};
+
+// DELETE /registrations/:id
+const deleteRegistration = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const existing = await pool.query('SELECT * FROM registrations WHERE id = $1', [id]);
+    if (existing.rows.length === 0) {
+      return error(res, 'Data pendaftaran tidak ditemukan', {}, 404);
+    }
+
+    if (existing.rows[0].status !== 'menunggu') {
+      return error(
+        res,
+        'Pendaftaran tidak bisa dihapus karena sudah diproses (bukan status menunggu)',
+        {},
+        422
+      );
+    }
+
+    // Cek apakah sudah punya antrean yang sudah diproses (dipanggil/selesai)
+    const queueCheck = await pool.query(
+      `SELECT id FROM queues WHERE registration_id = $1 AND status != 'menunggu'`,
+      [id]
+    );
+    if (queueCheck.rows.length > 0) {
+      return error(
+        res,
+        'Pendaftaran tidak bisa dihapus karena antreannya sudah diproses',
+        {},
+        422
+      );
+    }
+
+    // Hapus antrean terkait dulu (kalau masih status menunggu), baru hapus registrasi
+    await pool.query('DELETE FROM queues WHERE registration_id = $1', [id]);
+    await pool.query('DELETE FROM registrations WHERE id = $1', [id]);
+
+    return success(res, {}, 'Pendaftaran berhasil dihapus');
+  } catch (err) {
+    console.error(err);
+    return error(res, 'Gagal menghapus pendaftaran', {}, 500);
+  }
+};
+
+module.exports = {
+  getRegistrations,
+  createRegistration,
+  updateRegistrationStatus,
+  updateRegistration,
+  deleteRegistration,
+};
