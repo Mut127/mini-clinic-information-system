@@ -9,6 +9,10 @@ const medicalRecordRoutes = require('./routes/medicalRecordRoutes');
 const dashboardRoutes = require('./routes/dashboardRoutes');
 const prescriptionRoutes = require('./routes/prescriptionRoutes');
 const masterRoutes = require('./routes/masterRoutes');
+const userRoutes = require('./routes/userRoutes');   
+const path = require('path');
+const profileRoutes = require('./routes/profileRoutes');
+
 
 const app = express();
 
@@ -27,6 +31,9 @@ app.use('/api/medical-records', medicalRecordRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/prescriptions', prescriptionRoutes);
 app.use('/api/master', masterRoutes);
+app.use('/api/users', userRoutes);  
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+app.use('/api/profile', profileRoutes);
 
 app.use(errorHandler);
 

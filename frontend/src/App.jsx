@@ -8,6 +8,10 @@ import Patients from './pages/Patients';
 import Registrations from './pages/Registrations';
 import Queues from './pages/Queues';
 import MedicalRecords from './pages/MedicalRecords';
+import Users from './pages/Users';
+import Profile from './pages/Profile';
+import Polies from './pages/Polies';
+
 
 function App() {
   return (
@@ -28,6 +32,9 @@ function App() {
             <Route path="/registrations" element={<Registrations />} />
             <Route path="/queues" element={<Queues />} />
             <Route path="/medical-records" element={<MedicalRecords />} />
+            <Route path="/users" element={<Users />} />
+            <Route path="/profile" element={<Profile />} />
+            <Route path="/polies" element={<Polies />} />
             
           </Route>
 

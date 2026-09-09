@@ -8,7 +8,10 @@ import {
   Stethoscope,
   LogOut,
   Plus,
+  UserCog,
+  Building2,
 } from 'lucide-react';
+
 
 const menuItems = [
   { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -16,6 +19,8 @@ const menuItems = [
   { path: '/registrations', label: 'Pendaftaran', icon: ClipboardList },
   { path: '/queues', label: 'Antrean', icon: Ticket },
   { path: '/medical-records', label: 'Pemeriksaan', icon: Stethoscope },
+  { path: '/users', label: 'Kelola User', icon: UserCog, adminOnly: true }, 
+  { path: '/polies', label: 'Kelola Poli', icon: Building2 },
 ];
 
 const roleLabels = {
@@ -52,7 +57,9 @@ const MainLayout = () => {
         </div>
 
         <nav className="flex-1 p-4 space-y-1">
-          {menuItems.map((item) => {
+          {menuItems
+          .filter((item) => !item.adminOnly || user?.role === 'admin')
+          .map((item) => {
             const Icon = item.icon;
             return (
               <NavLink
@@ -74,15 +81,22 @@ const MainLayout = () => {
         </nav>
 
         <div className="p-4 border-t border-white/10">
-          <div className="flex items-center gap-3 px-2 py-2 mb-2">
-            <div className="w-9 h-9 rounded-full bg-teal-500 flex items-center justify-center text-xs font-bold shrink-0">
-              {initials}
-            </div>
-            <div className="min-w-0">
-              <p className="text-sm font-medium truncate">{user?.nama}</p>
-              <p className="text-xs text-slate-400">{roleLabels[user?.role] || user?.role}</p>
-            </div>
-          </div>
+          <NavLink
+  to="/profile"
+  className="flex items-center gap-3 px-2 py-2 mb-2 rounded-lg hover:bg-white/5 transition"
+>
+  <div className="w-9 h-9 rounded-full bg-teal-500 overflow-hidden flex items-center justify-center text-xs font-bold shrink-0">
+    {user?.avatar ? (
+      <img src={`${import.meta.env.VITE_API_URL.replace('/api', '')}${user.avatar}`} alt="Avatar" className="w-full h-full object-cover" />
+    ) : (
+      initials
+    )}
+  </div>
+  <div className="min-w-0">
+    <p className="text-sm font-medium truncate">{user?.nama}</p>
+    <p className="text-xs text-slate-400">{roleLabels[user?.role] || user?.role}</p>
+  </div>
+</NavLink>
           <button
             onClick={handleLogout}
             className="w-full flex items-center gap-2 px-3.5 py-2.5 text-sm text-red-400 hover:bg-red-500/10 rounded-xl transition"

@@ -4,6 +4,7 @@ CREATE TABLE users (
     password VARCHAR(255) NOT NULL,
     nama VARCHAR(100) NOT NULL,
     role VARCHAR(20) NOT NULL CHECK (role IN ('admin', 'dokter', 'petugas')),
+    avatar VARCHAR(255),
     created_at TIMESTAMP DEFAULT NOW()
 );
 
