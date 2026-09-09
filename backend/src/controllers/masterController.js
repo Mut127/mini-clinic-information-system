@@ -15,6 +15,74 @@ const getDoctors = async (req, res) => {
     return error(res, 'Gagal mengambil data dokter', {}, 500);
   }
 };
+const createDoctor = async (req, res) => {
+  try {
+    const { nama, poli_id } = req.body;
+
+    if (!nama || nama.trim() === '') {
+      return error(res, 'Validation Error', { nama: 'Nama dokter wajib diisi' }, 422);
+    }
+
+    const result = await pool.query(
+      `INSERT INTO doctors (nama, poli_id) VALUES ($1, $2) RETURNING *`,
+      [nama, poli_id || null]
+    );
+
+    return success(res, result.rows[0], 'Dokter berhasil ditambahkan', 201);
+  } catch (err) {
+    console.error(err);
+    return error(res, 'Gagal menambahkan dokter', {}, 500);
+  }
+};
+
+const updateDoctor = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { nama, poli_id } = req.body;
+
+    if (!nama || nama.trim() === '') {
+      return error(res, 'Validation Error', { nama: 'Nama dokter wajib diisi' }, 422);
+    }
+
+    const result = await pool.query(
+      `UPDATE doctors SET nama = $1, poli_id = $2 WHERE id = $3 RETURNING *`,
+      [nama, poli_id || null, id]
+    );
+
+    if (result.rows.length === 0) {
+      return error(res, 'Dokter tidak ditemukan', {}, 404);
+    }
+
+    return success(res, result.rows[0], 'Dokter berhasil diubah');
+  } catch (err) {
+    console.error(err);
+    return error(res, 'Gagal mengubah dokter', {}, 500);
+  }
+};
+
+const deleteDoctor = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Cegah hapus dokter yang masih punya riwayat pendaftaran/pemeriksaan terkait
+    const regCheck = await pool.query('SELECT id FROM registrations WHERE doctor_id = $1 LIMIT 1', [id]);
+    if (regCheck.rows.length > 0) {
+      return error(res, 'Dokter tidak bisa dihapus karena masih memiliki riwayat pendaftaran', {}, 422);
+    }
+
+    const result = await pool.query('DELETE FROM doctors WHERE id = $1 RETURNING id', [id]);
+    if (result.rows.length === 0) {
+      return error(res, 'Dokter tidak ditemukan', {}, 404);
+    }
+
+    return success(res, {}, 'Dokter berhasil dihapus');
+  } catch (err) {
+    console.error(err);
+    return error(res, 'Gagal menghapus dokter', {}, 500);
+  }
+};
+
+
 
 const getPolies = async (req, res) => {
   try {
@@ -104,4 +172,8 @@ const deletePoli = async (req, res) => {
   }
 };
 
-module.exports = { getDoctors, getPolies, createPoli, updatePoli, deletePoli };
+module.exports = {
+  getDoctors, getPolies,
+  createPoli, updatePoli, deletePoli,
+  createDoctor, updateDoctor, deleteDoctor,
+};

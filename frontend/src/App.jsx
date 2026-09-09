@@ -11,6 +11,7 @@ import MedicalRecords from './pages/MedicalRecords';
 import Users from './pages/Users';
 import Profile from './pages/Profile';
 import Polies from './pages/Polies';
+import Doctors from './pages/Doctors';
 
 
 function App() {
@@ -35,6 +36,7 @@ function App() {
             <Route path="/users" element={<Users />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/polies" element={<Polies />} />
+            <Route path="/doctors" element={<Doctors />} />
             
           </Route>
 

@@ -10,6 +10,7 @@ import {
   Plus,
   UserCog,
   Building2,
+  Stethoscope as StethoscopeIcon ,
 } from 'lucide-react';
 
 
@@ -21,6 +22,7 @@ const menuItems = [
   { path: '/medical-records', label: 'Pemeriksaan', icon: Stethoscope },
   { path: '/users', label: 'Kelola User', icon: UserCog, adminOnly: true }, 
   { path: '/polies', label: 'Kelola Poli', icon: Building2 },
+  { path: '/doctors', label: 'Kelola Dokter', icon: StethoscopeIcon },
 ];
 
 const roleLabels = {
