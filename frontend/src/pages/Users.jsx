@@ -31,6 +31,7 @@ const Users = () => {
   const [detailModalOpen, setDetailModalOpen] = useState(false);
 const [selectedUser, setSelectedUser] = useState(null);
 const [showPassword, setShowPassword] = useState(false);
+const [search, setSearch] = useState('');
 
 const passwordChecks = [
   { label: 'Minimal 8 karakter', valid: form.password.length >= 8 },
@@ -42,21 +43,23 @@ const passwordChecks = [
 
 const showToast = (message, type = 'success') => setToast({ message, type });
 
-
-  
-
   const fetchUsers = async () => {
-    setLoading(true);
-    try {
-      const data = await getUsers();
-      setUsers(data);
-    } catch (err) {
-      console.error(err);
-      showToast('Gagal memuat data user', 'error');
-    } finally {
-      setLoading(false);
-    }
-  };
+  setLoading(true);
+  try {
+    const data = await getUsers();
+    setUsers(data);
+  } catch (err) {
+    console.error(err);
+    showToast('Gagal memuat data user', 'error');
+  } finally {
+    setLoading(false);
+  }
+};
+
+const filteredData = users.filter((item) =>
+  item.nama.toLowerCase().includes(search.toLowerCase()) ||
+  item.username.toLowerCase().includes(search.toLowerCase())
+);
 
   useEffect(() => {
     fetchUsers();
@@ -136,6 +139,15 @@ const showToast = (message, type = 'success') => setToast({ message, type });
       </div>
 
       <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
+        <div className="p-4 border-b border-slate-100">
+    <input
+      type="text"
+      value={search}
+      onChange={(e) => setSearch(e.target.value)}
+      placeholder="Cari nama atau username..."
+      className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
+    />
+  </div>
         <table className="w-full text-sm">
           <thead className="bg-slate-50 text-slate-500 text-left">
             <tr>
@@ -152,7 +164,7 @@ const showToast = (message, type = 'success') => setToast({ message, type });
                   Memuat data...
                 </td>
               </tr>
-            ) : users.length === 0 ? (
+            ) : filteredData.length === 0 ? (
               <tr>
                 <td colSpan={4} className="px-6 py-10 text-center text-slate-400">
                   <UserCog size={28} className="mx-auto mb-2 text-slate-300" />
@@ -160,7 +172,7 @@ const showToast = (message, type = 'success') => setToast({ message, type });
                 </td>
               </tr>
             ) : (
-              users.map((u) => (
+              filteredData.map((u) => (
                 <tr key={u.id} className="hover:bg-slate-50/60 transition">
                   <td className="px-6 py-3">
                     <div className="flex items-center gap-3">
@@ -279,8 +291,6 @@ const showToast = (message, type = 'success') => setToast({ message, type });
               className="w-full border border-slate-200 rounded-lg p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-500"
             />
           </div>
-          <div>
-  <label className="text-xs font-medium text-slate-500 mb-1 block">Password</label>
   <div>
   <label className="text-xs font-medium text-slate-500 mb-1 block">Password</label>
   <div className="relative">
@@ -318,7 +328,6 @@ const showToast = (message, type = 'success') => setToast({ message, type });
       ))}
     </div>
   )}
-</div>
 </div>
           <div>
             <label className="text-xs font-medium text-slate-500 mb-1 block">Role</label>

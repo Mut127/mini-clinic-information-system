@@ -59,6 +59,27 @@ const updateDoctor = async (req, res) => {
     return error(res, 'Gagal mengubah dokter', {}, 500);
   }
 };
+const getDoctorById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const result = await pool.query(
+      `SELECT d.id, d.nama, d.poli_id, p.nama_poli, d.user_id, d.created_at
+       FROM doctors d
+       LEFT JOIN polies p ON d.poli_id = p.id
+       WHERE d.id = $1`,
+      [id]
+    );
+
+    if (result.rows.length === 0) {
+      return error(res, 'Dokter tidak ditemukan', {}, 404);
+    }
+
+    return success(res, result.rows[0], 'Berhasil mengambil data dokter');
+  } catch (err) {
+    console.error(err);
+    return error(res, 'Gagal mengambil data dokter', {}, 500);
+  }
+};
 
 const deleteDoctor = async (req, res) => {
   try {
@@ -150,6 +171,22 @@ const updatePoli = async (req, res) => {
   }
 };
 
+const getPoliById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const result = await pool.query('SELECT id, nama_poli FROM polies WHERE id = $1', [id]);
+
+    if (result.rows.length === 0) {
+      return error(res, 'Poli tidak ditemukan', {}, 404);
+    }
+
+    return success(res, result.rows[0], 'Berhasil mengambil data poli');
+  } catch (err) {
+    console.error(err);
+    return error(res, 'Gagal mengambil data poli', {}, 500);
+  }
+};
+
 const deletePoli = async (req, res) => {
   try {
     const { id } = req.params;
@@ -175,5 +212,5 @@ const deletePoli = async (req, res) => {
 module.exports = {
   getDoctors, getPolies,
   createPoli, updatePoli, deletePoli,
-  createDoctor, updateDoctor, deleteDoctor,
+  createDoctor, updateDoctor, deleteDoctor, getPoliById, getDoctorById,
 };

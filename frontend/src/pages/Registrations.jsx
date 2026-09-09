@@ -44,6 +44,8 @@ const Registrations = () => {
   const [formErrors, setFormErrors] = useState({});
   const [isEdit, setIsEdit] = useState(false);
   const [selectedRegistration, setSelectedRegistration] = useState(null);
+  const [search, setSearch] = useState('');
+
 
   const canManage = user?.role === 'admin' || user?.role === 'petugas';
 
@@ -97,6 +99,11 @@ const Registrations = () => {
       console.error(err);
     }
   };
+
+  const filteredData = registrations.filter((item) =>
+  item.nama_pasien?.toLowerCase().includes(search.toLowerCase())
+);
+
 
   useEffect(() => {
     fetchRegistrations();
@@ -233,6 +240,15 @@ const Registrations = () => {
         </div>
 
         <div className="overflow-x-auto">
+            <div className="p-4 border-b border-slate-100">
+    <input
+      type="text"
+      value={search}
+      onChange={(e) => setSearch(e.target.value)}
+      placeholder="Cari nama pasien"
+      className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
+    />
+  </div>
           <table className="w-full text-sm">
             <thead>
               <tr className="text-left text-slate-500 border-b border-slate-200">
@@ -249,10 +265,10 @@ const Registrations = () => {
             <tbody>
               {loading ? (
                 <tr><td colSpan={8} className="py-6 text-center text-slate-400">Memuat data...</td></tr>
-              ) : registrations.length === 0 ? (
+              ) : filteredData.length === 0 ? (
                 <tr><td colSpan={8} className="py-6 text-center text-slate-400">Belum ada data pendaftaran</td></tr>
               ) : (
-                registrations.map((r) => (
+                filteredData.map((r) => (
                   <tr key={r.id} className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
                     <td className="py-3 pr-4">
                       <div className="font-medium">{r.nama_pasien}</div>

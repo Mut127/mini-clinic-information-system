@@ -49,9 +49,9 @@ const MainLayout = () => {
       {/* Sidebar */}
       <aside className="w-64 bg-gradient-to-b from-slate-900 to-slate-800 text-white flex flex-col fixed h-screen">
         <div className="p-6 border-b border-white/10 flex items-center gap-3">
-          <div className="w-10 h-10 bg-teal-500 rounded-xl flex items-center justify-center font-bold text-lg shrink-0">
-            +
-          </div>
+          <div className="w-10 h-10 bg-teal-500 rounded-xl flex items-center justify-center shrink-0">
+  <StethoscopeIcon size={20} className="text-white" strokeWidth={2.2} />
+</div>
           <div>
             <h2 className="font-bold text-base leading-tight">Mini Clinic</h2>
             <p className="text-xs text-slate-400">Information System</p>
