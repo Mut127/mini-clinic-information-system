@@ -21,8 +21,8 @@ const menuItems = [
   { path: '/queues', label: 'Antrean', icon: Ticket },
   { path: '/medical-records', label: 'Pemeriksaan', icon: Stethoscope },
   { path: '/users', label: 'Kelola User', icon: UserCog, adminOnly: true }, 
-  { path: '/polies', label: 'Kelola Poli', icon: Building2 },
-  { path: '/doctors', label: 'Kelola Dokter', icon: StethoscopeIcon },
+  { path: '/polies', label: 'Kelola Poli', icon: Building2, adminOnly: true},
+  { path: '/doctors', label: 'Kelola Dokter', icon: StethoscopeIcon, adminOnly: true },
 ];
 
 const roleLabels = {

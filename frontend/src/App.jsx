@@ -32,11 +32,17 @@ function App() {
             <Route path="/patients" element={<Patients />} />
             <Route path="/registrations" element={<Registrations />} />
             <Route path="/queues" element={<Queues />} />
-            <Route path="/medical-records" element={<MedicalRecords />} />
-            <Route path="/users" element={<Users />} />
+            <Route path="/medical-records" element={<MedicalRecords />} />            
             <Route path="/profile" element={<Profile />} />
-            <Route path="/polies" element={<Polies />} />
-            <Route path="/doctors" element={<Doctors />} />
+            <Route path="/users" element={
+            <ProtectedRoute allowedRoles={['admin']}><Users /></ProtectedRoute>
+          } />
+          <Route path="/polies" element={
+            <ProtectedRoute allowedRoles={['admin']}><Polies /></ProtectedRoute>
+          } />
+          <Route path="/doctors" element={
+            <ProtectedRoute allowedRoles={['admin']}><Doctors /></ProtectedRoute>
+          } />
             
           </Route>
 
